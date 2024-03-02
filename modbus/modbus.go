@@ -10,6 +10,11 @@ import (
 	"github.com/simonvetter/modbus"
 )
 
+type ConnectionPeripheral struct {
+	PowerMeter bool `mapstructure:"power-meter"`
+	Luna2000 bool `mapstructure:"luna2000"`
+}
+
 type ConnectionConfig struct {
 	Name string `mapstructure:"name"`
 	IP string `mapstructure:"ip"`
@@ -20,6 +25,7 @@ type ConnectionConfig struct {
 	StopBits uint `mapstructure:"stop-bits"`
 	Timeout uint `mapstructure:"timeout"`
 	UnitId uint8 `mapstructure:"unit-id"`
+	Peripherals ConnectionPeripheral `mapstructure:"peripherals"`
 }
 
 type Connection struct {
@@ -232,39 +238,165 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 
 
 	// Battery
-	runningStatus, err := connection.client.ReadRegister(MODBUS_BATTERY_1_RUNNING_STATUS, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	runningStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(runningStatus))
+	if connection.config.Peripherals.Luna2000 {
+		runningStatus, err := connection.client.ReadRegister(MODBUS_BATTERY_1_RUNNING_STATUS, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		runningStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(runningStatus))
 
-	chargingStatus, err := connection.client.ReadUint32(MODBUS_BATTERY_1_CHARGING_STATUS, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	chargingStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(chargingStatus))
+		chargingStatus, err := connection.client.ReadUint32(MODBUS_BATTERY_1_CHARGING_STATUS, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		chargingStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(chargingStatus))
 
-	busVoltage, err := connection.client.ReadRegister(MODBUS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	busVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(busVoltage) / 10)
+		busVoltage, err := connection.client.ReadRegister(MODBUS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		busVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(busVoltage) / 10)
 
-	batteryCapacity, err := connection.client.ReadRegister(MODBUS_BATTERY_1_CAPACITY, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	batteryCapacityGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(batteryCapacity) / 10)
+		batteryCapacity, err := connection.client.ReadRegister(MODBUS_BATTERY_1_CAPACITY, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		batteryCapacityGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(batteryCapacity) / 10)
 
-	totalCharge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_CHARGE, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	totalChargeGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(totalCharge) / 100)
+		totalCharge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_CHARGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		totalChargeGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(totalCharge) / 100)
 
-	totalDischarge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_DISCHARGE, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
+		totalDischarge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_DISCHARGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		totalDischargeGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(totalDischarge) / 100)
 	}
-	totalDischargeGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(totalDischarge) / 100)
+
+
+	// Power meter
+	if connection.config.Peripherals.PowerMeter {
+		status, err := connection.client.ReadRegister(MODBUS_POWER_METER_STATUS, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterStatusGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(status))
+
+		powerMeterPhaseAVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "A"}).Set(float64(powerMeterPhaseAVoltage) / 10)
+
+		powerMeterPhaseACurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseCurrentGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "A"}).Set(float64(powerMeterPhaseACurrent) / 1000)
+
+		powerMeterPhaseBVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "B"}).Set(float64(powerMeterPhaseBVoltage) / 10)
+
+		powerMeterPhaseBCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseCurrentGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "B"}).Set(float64(powerMeterPhaseBCurrent) / 1000)
+
+		powerMeterPhaseCVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(powerMeterPhaseCVoltage) / 10)
+
+		powerMeterPhaseCCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseCurrentGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(powerMeterPhaseCCurrent) / 1000)
+
+		powerMeterActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterActivePower) / 1000)
+
+		powerMeterReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterReactivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterReactivePower) / 1000)
+
+		powerMeterPowerFactor, err := connection.client.ReadRegister(MODBUS_POWER_METER_POWER_FACTOR, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPowerFactorGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterPowerFactor) / 1000)
+
+		powerMeterFrequency, err := connection.client.ReadRegister(MODBUS_POWER_METER_FREQUENCY, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterFrequencyGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterFrequency) / 100)
+
+		positiveActiveElectricity, err := connection.client.ReadUint32(MODBUS_POWER_METER_POSITIVE_ACTIVE_ELECTRICITY, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPositiveActiveElectricityGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(positiveActiveElectricity) / 1000)
+		
+		reverseActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REVERSE_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterReverseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(reverseActivePower) / 1000)
+
+		accumulatedReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACCUMULATED_REACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterAccumulatedReactivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(accumulatedReactivePower) / 1000)
+
+		abLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_AB_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterLineVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "line": "AB"}).Set(float64(abLineVoltage) / 10)
+
+		bcLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_BC_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterLineVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "line": "BC"}).Set(float64(bcLineVoltage) / 10)
+
+		caLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_CA_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterLineVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "line": "CA"}).Set(float64(caLineVoltage) / 10)
+
+		phaseAActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "A"}).Set(float64(phaseAActivePower) / 1000)
+
+		phaseBActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "B"}).Set(float64(phaseBActivePower) / 1000)
+
+		phaseCActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(phaseCActivePower) / 1000)
+	}
 }

@@ -176,4 +176,119 @@ var (
 			"battery",
 		},
 	)
+
+
+	// Power meter
+	powerMeterStatusGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "status",
+			Help: "The status of the power meter",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterPhaseVoltageGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "phase_voltage",
+			Help: "The phase voltage",
+		},
+		[]string{
+			"connection",
+			"phase",
+		},
+	)
+	powerMeterPhaseCurrentGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "phase_current",
+			Help: "The phase current",
+		},
+		[]string{
+			"connection",
+			"phase",
+		},
+	)
+	powerMeterActivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "active_power",
+			Help: "The active power",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterReactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "reactive_power",
+			Help: "The reactive power",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterPowerFactorGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "power_factor",
+			Help: "The power factor",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterFrequencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "frequency",
+			Help: "The frequency",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterPositiveActiveElectricityGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "positive_active_electricity",
+			Help: "The positive active electricity",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterReverseActivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "reverse_active_power",
+			Help: "The reverse active power",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterAccumulatedReactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "accumulated_reactive_power",
+			Help: "The accumulated reactive power",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	powerMeterLineVoltageGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "line_voltage",
+			Help: "The line voltage",
+		},
+		[]string{
+			"connection",
+			"line",
+		},
+	)
+	powerMeterPhaseActivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "power_meter",
+			Name: "phase_active_power",
+			Help: "The phase active power",
+		},
+		[]string{
+			"connection",
+			"phase",
+		},
+	)
 )

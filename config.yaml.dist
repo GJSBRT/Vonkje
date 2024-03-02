@@ -9,7 +9,7 @@ modbus:
 
   connections:
     - name: inverter1
-      ip: 127.0.01.
+      ip: 127.0.0.1
       port: 520
       protocol: rtuovertcp
       baudrate: 9600
@@ -17,3 +17,6 @@ modbus:
       stop-bits: 1
       timeout: 5 # Seconds
       unit-id: 1
+      peripherals:
+        power-meter: true
+        luna2000: true
