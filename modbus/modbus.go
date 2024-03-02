@@ -146,32 +146,6 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 	}
 	pvCurrent.With(prometheus.Labels{"connection": connection.config.Name, "string": "2"}).Set(float64(pv2Current) / 100)
 
-	// string 3
-	pv3Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV3_VOLTAGE, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	pvVoltage.With(prometheus.Labels{"connection": connection.config.Name, "string": "3"}).Set(float64(pv3Voltage) / 10)
-
-	pv3Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV3_CURRENT, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	pvCurrent.With(prometheus.Labels{"connection": connection.config.Name, "string": "3"}).Set(float64(pv3Current) / 100)
-
-	// string 4
-	pv4Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV4_VOLTAGE, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	pvVoltage.With(prometheus.Labels{"connection": connection.config.Name, "string": "4"}).Set(float64(pv4Voltage) / 10)
-
-	pv4Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV4_CURRENT, modbus.HOLDING_REGISTER)
-	if err != nil {
-		panic(err)
-	}
-	pvCurrent.With(prometheus.Labels{"connection": connection.config.Name, "string": "4"}).Set(float64(pv4Current) / 100)
-
 
 	// phase A
 	phaseAVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
