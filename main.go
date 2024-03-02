@@ -93,5 +93,7 @@ func main() {
 
 	<-stopCtx.Done()
 
+	modbusClient.Close()
+
 	logger.Info("Exited")
 }

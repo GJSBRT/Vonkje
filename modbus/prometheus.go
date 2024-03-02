@@ -89,4 +89,60 @@ var (
 			Help: "The isulation resistance",
 		},
 	)
+
+	// Battery
+	runningStatusGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "running_status",
+			Help: "The running status",
+		},
+		[]string{
+			"battery",
+		},
+	)
+	chargingStatusGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "charging_status",
+			Help: "The charging status",
+		},
+		[]string{
+			"battery",
+		},
+	)
+	busVoltageGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "bus_voltage",
+			Help: "The bus voltage",
+		},
+		[]string{
+			"battery",
+		},
+	)
+	batteryCapacityGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "battery_capacity",
+			Help: "The battery capacity",
+		},
+		[]string{
+			"battery",
+		},
+	)
+	totalChargeGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "total_charge",
+			Help: "The total charge",
+		},
+		[]string{
+			"battery",
+		},
+	)
+	totalDischargeGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "luna2000",
+			Name: "total_discharge",
+			Help: "The total discharge",
+		},
+		[]string{
+			"battery",
+		},
+	)
 )
