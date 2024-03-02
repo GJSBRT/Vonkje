@@ -13,6 +13,7 @@ var (
 			Help: "The total amount of voltage",
 		},
 		[]string{
+			"connection",
 			"string",
 		},
 	)
@@ -22,6 +23,7 @@ var (
 			Help: "The total amount of current",
 		},
 		[]string{
+			"connection",
 			"string",
 		},
 	)
@@ -33,6 +35,7 @@ var (
 			Help: "The total amount of voltage",
 		},
 		[]string{
+			"connection",
 			"phase",
 		},
 	)
@@ -42,51 +45,73 @@ var (
 			Help: "The total amount of current",
 		},
 		[]string{
+			"connection",
 			"phase",
 		},
 	)
 
 	// other
-	activePowerGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	activePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "active_power",
 			Help: "The total amount of active power",
 		},
+		[]string{
+			"connection",
+		},
 	)
-	reactivePowerGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	reactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "reactive_power",
 			Help: "The total amount of reactive power",
 		},
+		[]string{
+			"connection",
+		},
 	)
-	powerFactorGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	powerFactorGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "power_factor",
 			Help: "The power factor",
 		},
+		[]string{
+			"connection",
+		},
 	)
-	gridFrequencyGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	gridFrequencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "grid_frequency",
 			Help: "The grid frequency",
 		},
-	)
-	inverterEfficiencyGauge = promauto.NewGauge(prometheus.GaugeOpts{
-			Namespace: "sun2000",
-			Name: "inverter_efficiency",
-			Help: "The inverter efficiency",
+		[]string{
+			"connection",
 		},
 	)
-	cabinetTemperatureGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	inverterEfficiencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "sun2000",
+			Name: "connection_efficiency",
+			Help: "The connection efficiency",
+		},
+		[]string{
+			"connection",
+		},
+	)
+	cabinetTemperatureGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "cabinet_temperature",
 			Help: "The cabinet temperature",
 		},
+		[]string{
+			"connection",
+		},
 	)
-	isulationResistanceGauge = promauto.NewGauge(prometheus.GaugeOpts{
+	isulationResistanceGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "isulation_resistance",
 			Help: "The isulation resistance",
+		},
+		[]string{
+			"connection",
 		},
 	)
 
@@ -97,6 +122,7 @@ var (
 			Help: "The running status",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
@@ -106,6 +132,7 @@ var (
 			Help: "The charging status",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
@@ -115,6 +142,7 @@ var (
 			Help: "The bus voltage",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
@@ -124,6 +152,7 @@ var (
 			Help: "The battery capacity",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
@@ -133,6 +162,7 @@ var (
 			Help: "The total charge",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
@@ -142,6 +172,7 @@ var (
 			Help: "The total discharge",
 		},
 		[]string{
+			"connection",
 			"battery",
 		},
 	)
