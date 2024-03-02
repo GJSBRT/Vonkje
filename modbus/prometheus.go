@@ -51,6 +51,15 @@ var (
 	)
 
 	// other
+	sun2000InputPowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "sun2000",
+			Name: "input_power",
+			Help: "The total amount of input power",
+		},
+		[]string{
+			"connection",
+		},
+	)
 	activePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "active_power",
