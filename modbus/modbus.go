@@ -398,5 +398,11 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 			panic(err)
 		}
 		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(phaseCActivePower))
+
+		powerMeterModelResult, err := connection.client.ReadRegister(MODBUS_POWER_METER_MODEL_RESULT, modbus.HOLDING_REGISTER)
+		if err != nil {
+			panic(err)
+		}
+		powerMeterModelResultGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterModelResult))
 	}
 }
