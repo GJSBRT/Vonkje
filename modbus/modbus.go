@@ -19,7 +19,7 @@ type ConnectionConfig struct {
 	DataBits uint `mapstructure:"data-bits"`
 	StopBits uint `mapstructure:"stop-bits"`
 	Timeout uint `mapstructure:"timeout"`
-	UnitId uint `mapstructure:"unit-id"`
+	UnitId uint8 `mapstructure:"unit-id"`
 }
 
 type Connection struct {
