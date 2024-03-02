@@ -5,10 +5,15 @@ http:
   port: 8080
 
 modbus:
-  ip: 127.0.0.1
-  port: 520
-  baudrate: 9600
-  data-bits: 8
-  stop-bits: 1
-  timeout: 5 # Seconds
   read-metrics-interval: 15 # Seconds
+
+  connections:
+    - name: inverter1
+      ip: 127.0.01.
+      port: 520
+      protocol: rtuovertcp
+      baudrate: 9600
+      data-bits: 8
+      stop-bits: 1
+      timeout: 5 # Seconds
+      unit-id: 1

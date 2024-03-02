@@ -19,6 +19,7 @@ type ConnectionConfig struct {
 	DataBits uint `mapstructure:"data-bits"`
 	StopBits uint `mapstructure:"stop-bits"`
 	Timeout uint `mapstructure:"timeout"`
+	UnitId uint `mapstructure:"unit-id"`
 }
 
 type Connection struct {
@@ -62,6 +63,11 @@ func New(
 			return nil, err
 		}
 	
+		err = client.SetUnitId(connectionConfig.UnitId)
+		if err != nil {
+			return nil, err
+		}
+
 		err = client.Open()
 		if err != nil {
 			return nil, err
