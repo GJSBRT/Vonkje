@@ -256,7 +256,11 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 		if err != nil {
 			panic(err)
 		}
-		chargingStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(chargingStatus))
+		if chargingStatus > 999999 {
+			chargingStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(0)
+		} else {
+			chargingStatusGauge.With(prometheus.Labels{"connection": connection.config.Name, "battery": "1"}).Set(float64(chargingStatus))
+		}
 
 		busVoltage, err := connection.client.ReadRegister(MODBUS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
 		if err != nil {
