@@ -361,11 +361,22 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 		}
 		powerMeterPhaseCurrentGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(powerMeterPhaseCCurrentResult) / 100)
 
+		var powerMeterActivePowerResult uint32
 		powerMeterActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 		if err != nil {
 			panic(err)
 		}
-		powerMeterActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterActivePower))
+		if powerMeterActivePower > 999999 {
+			powerMeterActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+			if err != nil {
+				panic(err)
+			}
+			
+			powerMeterActivePowerResult = utils.ConvertTooLargeNumber(powerMeterActivePowerBytes)
+		} else {
+			powerMeterActivePowerResult = powerMeterActivePower
+		}
+		powerMeterActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(powerMeterActivePowerResult) / 100)
 
 		powerMeterReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 		if err != nil {
