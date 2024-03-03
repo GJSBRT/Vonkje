@@ -69,6 +69,25 @@ var (
 			"connection",
 		},
 	)
+	sun2000StateGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "sun2000",
+			Name: "state",
+			Help: "The state of the sun2000 inverter",
+		},
+		[]string{
+			"connection",
+			"state",
+		},
+	)
+	sun2000DeviceStatusGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "sun2000",
+			Name: "device_status",
+			Help: "The device status of the inverter",
+		},
+		[]string{
+			"connection",
+		},
+	)
 	reactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
 			Name: "reactive_power",

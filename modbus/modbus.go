@@ -201,6 +201,19 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 		panic(err)
 	}
 	sun2000InputPowerGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(inputPower) / 1000)
+
+	stateOne, err := connection.client.ReadUint32(MODBUS_INVERTER_STATE_1, modbus.HOLDING_REGISTER)
+	if err != nil {
+		panic(err)
+	}
+	sun2000StateGauge.With(prometheus.Labels{"connection": connection.config.Name, "state": "1"}).Set(float64(stateOne))
+
+	inverterDeviceStatus, err := connection.client.ReadUint32(MODBUS_INVERTER_DEVICE_STATUS, modbus.HOLDING_REGISTER)
+	if err != nil {
+		panic(err)
+	}
+	sun2000DeviceStatusGauge.With(prometheus.Labels{"connection": connection.config.Name}).Set(float64(inverterDeviceStatus))
+
 	activePower, err := connection.client.ReadUint32(MODBUS_INVERTER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		panic(err)
