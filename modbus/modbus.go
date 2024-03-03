@@ -421,23 +421,56 @@ func (m *Modbus) updateMetrics(connection *Connection) {
 		}
 		powerMeterLineVoltageGauge.With(prometheus.Labels{"connection": connection.config.Name, "line": "CA"}).Set(float64(caLineVoltage) / 10)
 
-		phaseAActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		var phaseAActivePowerResult uint32
+		powerMeterPhaseAActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 		if err != nil {
 			panic(err)
 		}
-		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "A"}).Set(float64(phaseAActivePower))
+		if powerMeterPhaseAActivePower > 999999 {
+			powerMeterPhaseAActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+			if err != nil {
+				panic(err)
+			}
+			
+			phaseAActivePowerResult = utils.ConvertTooLargeNumber(powerMeterPhaseAActivePowerBytes)
+		} else {
+			phaseAActivePowerResult = powerMeterPhaseAActivePower
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "A"}).Set(float64(phaseAActivePowerResult) / 100)
 
-		phaseBActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		var phaseBActivePowerResult uint32
+		powerMeterPhaseBActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 		if err != nil {
 			panic(err)
 		}
-		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "B"}).Set(float64(phaseBActivePower))
+		if powerMeterPhaseBActivePower > 999999 {
+			powerMeterPhaseBActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+			if err != nil {
+				panic(err)
+			}
+			
+			phaseBActivePowerResult = utils.ConvertTooLargeNumber(powerMeterPhaseBActivePowerBytes)
+		} else {
+			phaseBActivePowerResult = powerMeterPhaseBActivePower
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "B"}).Set(float64(phaseBActivePowerResult) / 100)
 
-		phaseCActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+		var phaseCActivePowerResult uint32
+		powerMeterPhaseCActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 		if err != nil {
 			panic(err)
 		}
-		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(phaseCActivePower))
+		if powerMeterPhaseCActivePower > 999999 {
+			powerMeterPhaseCActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+			if err != nil {
+				panic(err)
+			}
+			
+			phaseCActivePowerResult = utils.ConvertTooLargeNumber(powerMeterPhaseCActivePowerBytes)
+		} else {
+			phaseCActivePowerResult = powerMeterPhaseCActivePower
+		}
+		powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"connection": connection.config.Name, "phase": "C"}).Set(float64(phaseCActivePowerResult) / 100)
 
 		powerMeterModelResult, err := connection.client.ReadRegister(MODBUS_POWER_METER_MODEL_RESULT, modbus.HOLDING_REGISTER)
 		if err != nil {
