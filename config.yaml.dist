@@ -8,7 +8,7 @@ modbus:
   read-metrics-interval: 15 # Seconds
 
   connections:
-    - name: inverter1
+    - name: port1 moxa
       ip: 127.0.0.1
       port: 520
       protocol: rtuovertcp
@@ -16,7 +16,12 @@ modbus:
       data-bits: 8
       stop-bits: 1
       timeout: 5 # Seconds
-      unit-id: 1
-      peripherals:
-        power-meter: true
-        luna2000: true
+      inverters:
+        - name: "inverter1"
+          unit-id: 1
+          power-meter: false
+          luna2000: true
+        - name: "inverter2"
+          unit-id: 2
+          power-meter: true
+          luna2000: true

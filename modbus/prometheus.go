@@ -13,7 +13,7 @@ var (
 			Help: "The total amount of voltage",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"string",
 		},
 	)
@@ -23,7 +23,7 @@ var (
 			Help: "The total amount of current",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"string",
 		},
 	)
@@ -35,7 +35,7 @@ var (
 			Help: "The total amount of voltage",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"phase",
 		},
 	)
@@ -45,7 +45,7 @@ var (
 			Help: "The total amount of current",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"phase",
 		},
 	)
@@ -57,7 +57,7 @@ var (
 			Help: "The total amount of input power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	activePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -66,7 +66,7 @@ var (
 			Help: "The total amount of active power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	sun2000StateGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -75,7 +75,7 @@ var (
 			Help: "The state of the sun2000 inverter",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"state",
 		},
 	)
@@ -85,7 +85,7 @@ var (
 			Help: "The device status of the inverter",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	reactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -94,7 +94,7 @@ var (
 			Help: "The total amount of reactive power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerFactorGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -103,7 +103,7 @@ var (
 			Help: "The power factor",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	gridFrequencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -112,7 +112,7 @@ var (
 			Help: "The grid frequency",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	inverterEfficiencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -121,7 +121,7 @@ var (
 			Help: "The connection efficiency",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	cabinetTemperatureGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -130,7 +130,7 @@ var (
 			Help: "The cabinet temperature",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	isulationResistanceGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -139,7 +139,7 @@ var (
 			Help: "The isulation resistance",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 
@@ -150,7 +150,7 @@ var (
 			Help: "The running status",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -160,7 +160,7 @@ var (
 			Help: "The charging status",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -170,7 +170,7 @@ var (
 			Help: "The bus voltage",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -180,7 +180,7 @@ var (
 			Help: "The battery capacity",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -190,7 +190,7 @@ var (
 			Help: "The total charge",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -200,7 +200,7 @@ var (
 			Help: "The total discharge",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"battery",
 		},
 	)
@@ -213,7 +213,7 @@ var (
 			Help: "The status of the power meter",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterPhaseVoltageGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -222,7 +222,7 @@ var (
 			Help: "The phase voltage",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"phase",
 		},
 	)
@@ -232,7 +232,7 @@ var (
 			Help: "The phase current",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"phase",
 		},
 	)
@@ -242,7 +242,7 @@ var (
 			Help: "The active power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterReactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -251,7 +251,7 @@ var (
 			Help: "The reactive power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterPowerFactorGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -260,7 +260,7 @@ var (
 			Help: "The power factor",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterFrequencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -269,7 +269,7 @@ var (
 			Help: "The frequency",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterPositiveActiveElectricityGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -278,7 +278,7 @@ var (
 			Help: "The positive active electricity",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterReverseActivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -287,7 +287,7 @@ var (
 			Help: "The reverse active power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterAccumulatedReactivePowerGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -296,7 +296,7 @@ var (
 			Help: "The accumulated reactive power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 	powerMeterLineVoltageGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
@@ -305,7 +305,7 @@ var (
 			Help: "The line voltage",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"line",
 		},
 	)
@@ -315,7 +315,7 @@ var (
 			Help: "The phase active power",
 		},
 		[]string{
-			"connection",
+			"inverter",
 			"phase",
 		},
 	)
@@ -325,7 +325,7 @@ var (
 			Help: "The power meter model result",
 		},
 		[]string{
-			"connection",
+			"inverter",
 		},
 	)
 )
