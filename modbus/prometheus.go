@@ -117,8 +117,8 @@ var (
 	)
 	inverterEfficiencyGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "sun2000",
-			Name: "connection_efficiency",
-			Help: "The connection efficiency",
+			Name: "inverter_efficiency",
+			Help: "The inverter efficiency",
 		},
 		[]string{
 			"inverter",
