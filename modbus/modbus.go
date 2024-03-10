@@ -120,14 +120,23 @@ func (m *Modbus) Start() {
 func (m *Modbus) updateMetrics() {
 	for _, connection := range m.connections {
 		for _, inverter := range connection.config.Inverters {
-			m.errChannel <- m.updateSun2000Metrics(connection, inverter)
+			err := m.updateSun2000Metrics(connection, inverter)
+			if err != nil {
+				m.errChannel <- err
+			}
 
 			if inverter.Luna2000 {
-				m.errChannel <- m.updateLuna2000Metrics(connection, inverter)
+				err = m.updateLuna2000Metrics(connection, inverter)
+				if err != nil {
+					m.errChannel <- err
+				}
 			}
 
 			if inverter.PowerMeter {
-				m.errChannel <- m.updatePowerMeterMetrics(connection, inverter)
+				err = m.updatePowerMeterMetrics(connection, inverter)
+				if err != nil {
+					m.errChannel <- err
+				}
 			}
 		}
 	}
