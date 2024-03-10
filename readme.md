@@ -1,4 +1,4 @@
-# Huawei Sun2000 met modbuis naar prometheus
+# Vonkje
 
 ## Linkjes
 - **Modbus definities** https://www.photovoltaikforum.com/core/attachment/251184-solar-inverter-modbus-interface-definitions-pdf/
