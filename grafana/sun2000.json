@@ -831,7 +831,7 @@
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
-            "legendFormat": "Efficiency",
+            "legendFormat": "{{inverter}} Efficiency",
             "range": true,
             "refId": "A",
             "useBackend": false

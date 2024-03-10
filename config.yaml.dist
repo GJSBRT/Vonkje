@@ -5,6 +5,7 @@ http:
   port: 8080
 
 modbus:
+  run: true # Read metrics from inverters every interval
   read-metrics-interval: 15 # Seconds
 
   connections:
@@ -25,3 +26,13 @@ modbus:
           unit-id: 2
           power-meter: true
           luna2000: true
+
+power-prices:
+  sources:
+    all-in-power:
+
+victoria-metrics:
+  url: http://127.0.0.1:8428
+  # Basic HTTP authentication
+  username:
+  password:
