@@ -107,7 +107,7 @@ func (pp *PowerPrices) Start() {
 
 	err := pp.updateMetrics()
 	if err != nil {
-		pp.logger.WithError(err).Error("Failed to update metrics")
+		pp.errChannel <- err
 	}
 
     go pp.Start()

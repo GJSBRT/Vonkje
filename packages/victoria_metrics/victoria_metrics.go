@@ -34,13 +34,17 @@ func (g *VictoriaMetrics) SendMetrics(requests []VictoriaMetricsRequest) error {
 
 	// Loop through the request and build the body
 	body := ""
-	for _, requestBody := range requests {
+	for i, requestBody := range requests {
 		jsonRequest, err := json.Marshal(requestBody)
 		if err != nil {
 			return err
 		}
 
 		body += string(jsonRequest)
+
+		if i != len(requests) - 1 {
+			body += "\n"
+		}
 	}
 
 	// Create the request to Victoria Metrics

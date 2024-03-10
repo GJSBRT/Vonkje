@@ -1,5 +1,5 @@
 # Vonkje
-Vonkje is a small services which manages communication, metrics, decision making and control of a solar plant. The goal of this application is to provide insight and to improve the efficiency of a solar plant.
+Vonkje is a small service which manages communication, metrics, decision making and control of a solar plant. The goal of this application is to provide insight and to improve the efficiency of a solar plant.
 
 ## Runtime Dependencies
 - Grafana for visualisation
