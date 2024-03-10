@@ -57,7 +57,7 @@ func New(
 }
 
 func (pp *PowerPrices) addPricesOfSource(source PowerPriceSource) error {
-	prices, err := source.GetPricesKwH(time.Now())
+	prices, err := source.GetPricesKwH(time.Now().Add(24 * time.Hour))
 	if err != nil {
 		return err
 	}
