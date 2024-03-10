@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"gijs.eu/huawei-modbus/utils"
+	"gijs.eu/vonkje/utils"
 
 	"github.com/sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"

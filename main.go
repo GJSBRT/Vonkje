@@ -7,8 +7,8 @@ import (
 	"context"
 	"os/signal"
 
-	"gijs.eu/huawei-modbus/http"
-	"gijs.eu/huawei-modbus/modbus"
+	"gijs.eu/vonkje/http"
+	"gijs.eu/vonkje/modbus"
 
 	"github.com/spf13/viper"
 	"github.com/sirupsen/logrus"

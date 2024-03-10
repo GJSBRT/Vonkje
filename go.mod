@@ -1,6 +1,6 @@
-module gijs.eu/huawei-modbus
+module gijs.eu/vonkje
 
-go 1.22.0
+go 1.22
 
 require (
 	github.com/gorilla/mux v1.8.1
