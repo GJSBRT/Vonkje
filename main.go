@@ -9,15 +9,19 @@ import (
 
 	"gijs.eu/vonkje/http"
 	"gijs.eu/vonkje/modbus"
+	"gijs.eu/vonkje/power_prices"
+	"gijs.eu/vonkje/packages/victoria_metrics"
 
 	"github.com/spf13/viper"
 	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
-	LogLevel 	string `mapstructure:"log-level"`
-	HTTP 		http.Config `mapstructure:"http"`
-	Modbus 		modbus.Config `mapstructure:"modbus"`
+	LogLevel 			string `mapstructure:"log-level"`
+	HTTP 				http.Config `mapstructure:"http"`
+	Modbus 				modbus.Config `mapstructure:"modbus"`
+	VictoriaMetrics 	victoria_metrics.Config `mapstructure:"victoria-metrics"`
+	PowerPrices 		power_prices.Config `mapstructure:"power-prices"`
 }
 
 var (
@@ -85,11 +89,15 @@ func main() {
 	if err != nil {
 		logger.WithError(err).Panic("Failed to create modbus client")
 	}
-
 	go modbusClient.Start()
 
 	httpServer := http.New(config.HTTP, errChannel, stopCtx, logger)
 	go httpServer.Start()
+
+	victoriaMetricsClient := victoria_metrics.New(config.VictoriaMetrics)
+
+	powerPricesClient := power_prices.New(config.PowerPrices, errChannel, stopCtx, logger, victoriaMetricsClient)
+	go powerPricesClient.Start()
 
 	<-stopCtx.Done()
 

@@ -1,5 +1,10 @@
 # Vonkje
+Vonkje is a small services which manages communication, metrics, decision making and control of a solar plant. The goal of this application is to provide insight and to improve the efficiency of a solar plant.
 
-## Linkjes
-- **Modbus definities** https://www.photovoltaikforum.com/core/attachment/251184-solar-inverter-modbus-interface-definitions-pdf/
-- **De echte nuttige modbus definities** https://community.openhab.org/t/reading-data-from-huawei-inverter-sun-2000-3ktl-10ktl-via-modbus-tcp-and-rtu/87670
+## Runtime Dependencies
+- Grafana for visualisation
+- Victoria Metrics for metrics storage
+
+## Development Dependencies
+- **Golang** 1.22 or higher
+- **Docker** for Victoria Metrics and Grafana

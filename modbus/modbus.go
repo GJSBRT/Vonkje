@@ -37,6 +37,7 @@ type Connection struct {
 }
 
 type Config struct {
+	Run bool `mapstructure:"run"`
 	ReadMetricsInterval uint `mapstructure:"read-metrics-interval"`
 	Connections []ConnectionConfig `mapstructure:"connections"`
 }
@@ -99,6 +100,11 @@ func (m *Modbus) Close() {
 }
 
 func (m *Modbus) Start() {
+	if !m.config.Run {
+		m.logger.Warn("Modbus metrics collector is disabled")
+		return
+	}
+
 	m.logger.Info("Starting modbus metrics collector")
 
 	m.updateMetrics()
