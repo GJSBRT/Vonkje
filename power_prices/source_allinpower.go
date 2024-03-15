@@ -1,26 +1,21 @@
 package power_prices
 
 import (
+	"fmt"
 	"time"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
 )
 
-type AllInPowerConfig struct {}
-
 type AllInPower struct {
 	name string
-	Config AllInPowerConfig
-	Resolution uint
 	Client *http.Client
 }
 
-func newAllInPower(config AllInPowerConfig) *AllInPower {
+func newAllInPower() *AllInPower {
 	return &AllInPower{
 		name: "all-in-power",
-		Config: config,
-		Resolution: 60,
 		Client: &http.Client{},
 	}
 }
@@ -29,7 +24,7 @@ func (a *AllInPower) GetName() string {
 	return a.name
 }
 
-type spotMarketPriceResponse struct {
+type allInPowerSpotMarketPriceResponse struct {
 	Id int `json:"id"`
 	Timestamps []string `json:"timestamps"`
 	Created string `json:"created"`
@@ -41,7 +36,8 @@ type spotMarketPriceResponse struct {
 }
 
 func (a *AllInPower) GetPricesKwH(timestamp time.Time) (map[time.Time]float64, error) {
-	request, err := http.NewRequest("GET", "https://api.allinpower.nl/troodon/api/p/spot_market/prices/?date="+timestamp.Format(time.DateOnly)+"&product_type=ELK", nil)
+	requestUrl := fmt.Sprintf("https://api.allinpower.nl/troodon/api/p/spot_market/prices/?date=%s&product_type=ELK", timestamp.Add(24 * time.Hour).Format(time.DateOnly))
+	request, err := http.NewRequest("GET", requestUrl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +58,7 @@ func (a *AllInPower) GetPricesKwH(timestamp time.Time) (map[time.Time]float64, e
 		return nil, err
 	}
 
-	var responseBody spotMarketPriceResponse
+	var responseBody allInPowerSpotMarketPriceResponse
 	err = json.Unmarshal(body, &responseBody)
 	if err != nil {
 		return nil, err

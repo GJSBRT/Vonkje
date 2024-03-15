@@ -11,11 +11,11 @@ import (
 )
 
 type PowerPriceSourceConfigs struct {
-	AllInPowerConfig AllInPowerConfig `json:"all-in-power"`
+	Entsoe EntsoeConfig `mapstructure:"entsoe"`
 }
 
 type Config struct {
-	Sources PowerPriceSourceConfigs `json:"sources"`
+	Sources PowerPriceSourceConfigs `mapstructure:"sources"`
 }
 
 type PowerPrices struct {
@@ -45,7 +45,8 @@ func New(
 	logger *logrus.Logger,
 	victoriaMetrics *victoria_metrics.VictoriaMetrics,
 ) *PowerPrices {
-	sources = append(sources, newAllInPower(config.Sources.AllInPowerConfig))
+	sources = append(sources, newAllInPower())
+	sources = append(sources, newEntsoe(config.Sources.Entsoe))
 
 	return &PowerPrices{
 		Config: config,
@@ -57,7 +58,7 @@ func New(
 }
 
 func (pp *PowerPrices) addPricesOfSource(source PowerPriceSource) error {
-	prices, err := source.GetPricesKwH(time.Now().Add(24 * time.Hour))
+	prices, err := source.GetPricesKwH(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC))
 	if err != nil {
 		return err
 	}
@@ -98,17 +99,16 @@ func (pp *PowerPrices) updateMetrics() error {
 func (pp *PowerPrices) Start() {
 	pp.logger.Info("Starting power price collector")
 
+	err := pp.updateMetrics()
+	if err != nil {
+		pp.errChannel <- err
+	}
 	now := time.Now()
 
     nextMidnight := time.Date(now.Year(), now.Month(), now.Day()+1, 1, 0, 0, 0, time.Local)
     durationUntilMidnight := nextMidnight.Sub(now)
 
     time.Sleep(durationUntilMidnight)
-
-	err := pp.updateMetrics()
-	if err != nil {
-		pp.errChannel <- err
-	}
 
     go pp.Start()
 }
