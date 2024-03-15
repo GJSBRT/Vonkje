@@ -29,7 +29,11 @@ modbus:
 
 power-prices:
   sources:
-    all-in-power:
+    entsoe:
+      # Domains can be found here: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_areas
+      domain: "10YNL----------L"
+      # You will need to contact Entsoe support to get access to their API.
+      security-token: ""
 
 victoria-metrics:
   url: http://127.0.0.1:8428

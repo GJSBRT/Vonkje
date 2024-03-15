@@ -3,4 +3,5 @@ Power prices can be obtained from multiple sources. We want to create an envirom
 
 ## Support sources
 - [All In Power](https://allinpower.nl)
+- [Entsoe](https://entsoe.eu)
 
