@@ -145,13 +145,13 @@ func (c *Control) Start() {
 			var overProductionWatts int
 			if avgSolarIn > avgHomeLoad {
 				overProduction = math.Ceil((avgSolarIn - avgHomeLoad) / avgSolarIn * 100)
-				overProductionWatts = int(math.Floor(avgHomeLoad - avgSolarIn))
+				overProductionWatts = int(math.Floor(avgSolarIn - avgHomeLoad))
 			} else {
 				overProduction = 0
 				overProductionWatts = 0
 			}
 			metrics.SetMetricValue("control", "over_production", map[string]string{}, overProduction)
-			c.logger.WithFields(logrus.Fields{"overProduction": overProduction}).Info("Over production")
+			c.logger.WithFields(logrus.Fields{"percentage": overProduction, "watts": overProductionWatts}).Info("Over production")
 
 			// 4. if solar over production is more than x%, charge battery
 			if overProduction > float64(c.config.MinimumSolarOverProduction) {
