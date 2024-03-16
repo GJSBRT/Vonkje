@@ -155,12 +155,12 @@ func (c *Control) Start() {
 
 			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
 			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn)
-			batteriesRequired := math.Ceil(wattsRequired / 1500)
+			batteriesRequired := math.Ceil(wattsRequired / 500)
 			if avgSolarIn < avgHomeLoad {
 				if batteriesRequired > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
 				} else {
-					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
+					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
 				}
 
 				for _, battery := range batteries {
