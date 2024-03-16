@@ -9,14 +9,12 @@ import (
 	"gijs.eu/vonkje/metrics"
 	"gijs.eu/vonkje/packages/victoria_metrics"
 
-	"github.com/spf13/viper"
 	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
 	Run bool `mapstructure:"run"`
 	LoopInterval int `mapstructure:"loop-interval"`
-	MetricsAvgPeriod int `mapstructure:"metrics-avg-period"`
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
 }
 
@@ -59,15 +57,13 @@ func (c *Control) Start() {
 		return
 	}
 
-	c.logger.Infof("Waiting %d minutes before starting control loop to collect metrics", c.config.MetricsAvgPeriod)
-	time.Sleep(time.Duration(c.config.MetricsAvgPeriod) * time.Minute)
+	c.logger.Infof("Waiting %d seconds before starting control loop to collect metrics", viper.GetInt("modbus.read-metrics-interval"))
+	time.Sleep(time.Duration(viper.GetInt("modbus.read-metrics-interval")) * time.Minute)
 
 	c.logger.Info("Starting control loop")
 
 	ticker := time.NewTicker(time.Duration(c.config.LoopInterval) * time.Second)
 	defer ticker.Stop()
-
-	entriesWanted := uint(c.config.MetricsAvgPeriod * (60 / viper.GetInt("modbus.read-metrics-interval")))
 
 	for {
 		select {
@@ -81,25 +77,25 @@ func (c *Control) Start() {
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 			// 1. Get current home energy consumption
-			avgMeterPhaseVoltage, err := metrics.GetMetricAverage("power_meter", "phase_voltage", entriesWanted)
+			avgMeterPhaseVoltage, err := metrics.GetMetricLastEntryAverage("power_meter", "phase_voltage")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgMeterPhaseCurrent, err := metrics.GetMetricAverage("power_meter", "phase_current", entriesWanted)
+			avgMeterPhaseCurrent, err := metrics.GetMetricLastEntryAverage("power_meter", "phase_current")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgInverterPhaseVoltage, err := metrics.GetMetricAverage("sun2000", "phase_voltage", entriesWanted)
+			avgInverterPhaseVoltage, err := metrics.GetMetricLastEntryAverage("sun2000", "phase_voltage")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgInverterPhaseCurrent, err := metrics.GetMetricAverage("sun2000", "phase_current", entriesWanted)
+			avgInverterPhaseCurrent, err := metrics.GetMetricLastEntryAverage("sun2000", "phase_current")
 			if err != nil {
 				c.errChannel <- err
 				continue
@@ -111,7 +107,7 @@ func (c *Control) Start() {
 			}
 
 			// 2. Get current solar production
-			avgSolarIn, err := metrics.GetMetricAverage("sun2000", "input_power", entriesWanted)
+			avgSolarIn, err := metrics.GetMetricLastEntryAverage("sun2000", "input_power")
 			if err != nil {
 				c.errChannel <- err
 				continue
