@@ -15,7 +15,6 @@ import (
 
 type Config struct {
 	Run bool `mapstructure:"run"`
-	LoopInterval int `mapstructure:"loop-interval"`
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
 }
 
@@ -63,7 +62,7 @@ func (c *Control) Start() {
 
 	c.logger.Info("Starting control loop")
 
-	ticker := time.NewTicker(time.Duration(c.config.LoopInterval) * time.Second)
+	ticker := time.NewTicker(time.Duration(viper.GetInt("modbus.read-metrics-interval")) * time.Second)
 	defer ticker.Stop()
 
 	for {
