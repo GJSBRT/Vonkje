@@ -358,9 +358,9 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 			return err
 		}
 		
-		powerMeterActivePowerResult = utils.ConvertTooLargeNumber(powerMeterActivePowerBytes) / 10
+		powerMeterActivePowerResult = utils.ConvertTooLargeNumber(powerMeterActivePowerBytes)
 	} else {
-		powerMeterActivePowerResult = powerMeterActivePower / 10
+		powerMeterActivePowerResult = powerMeterActivePower
 	}
 	metrics.SetMetricValue("power_meter", "active_power", map[string]string{"inverter": inverter.Name}, float64(powerMeterActivePowerResult) / 100)
 

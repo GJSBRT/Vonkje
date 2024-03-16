@@ -77,19 +77,31 @@ func (c *Control) Start() {
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 			// 1. Get current home energy consumption
-			powerMeterActivePower, err := metrics.GetMetricLastEntryAverage("power_meter", "active_power")
+			avgMeterPhaseVoltage, err := metrics.GetMetricLastEntryAverage("power_meter", "phase_voltage")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			inverterActivePower, err := metrics.GetMetricLastEntrySum("sun2000", "active_power")
+			avgMeterPhaseCurrent, err := metrics.GetMetricLastEntryAverage("power_meter", "phase_current")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgHomeLoad := math.Ceil(inverterActivePower - powerMeterActivePower)
+			avgInverterPhaseVoltage, err := metrics.GetMetricLastEntryAverage("sun2000", "phase_voltage")
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+
+			avgInverterPhaseCurrent, err := metrics.GetMetricLastEntryAverage("sun2000", "phase_current")
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+
+			avgHomeLoad := math.Ceil(avgMeterPhaseVoltage * avgMeterPhaseCurrent) - math.Ceil(avgInverterPhaseVoltage * avgInverterPhaseCurrent)
 			if avgHomeLoad < 0 {
 				avgHomeLoad = 0
 			}
