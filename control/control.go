@@ -68,9 +68,6 @@ func (c *Control) Start() {
 	defer ticker.Stop()
 
 	entriesWanted := uint(c.config.MetricsAvgPeriod * (60 / viper.GetInt("modbus.read-metrics-interval")))
-	metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 0)
-	metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
-	metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 	for {
 		select {
@@ -79,29 +76,53 @@ func (c *Control) Start() {
 			return
 		case <-ticker.C:
 			c.logger.Debug("Control loop tick")
+			metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 0)
+			metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
+			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 			// 1. Get current home energy consumption
-			avgPhaseVoltage, err := metrics.GetMetricAverage("power_meter", "phase_voltage", entriesWanted)
+			avgMeterPhaseVoltage, err := metrics.GetMetricAverage("power_meter", "phase_voltage", entriesWanted)
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgPhaseCurrent, err := metrics.GetMetricAverage("power_meter", "phase_current", entriesWanted)
+			avgMeterPhaseCurrent, err := metrics.GetMetricAverage("power_meter", "phase_current", entriesWanted)
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
 
-			avgHomeLoad := math.Ceil(avgPhaseVoltage * avgPhaseCurrent)
+			avgInverterPhaseVoltage, err := metrics.GetMetricAverage("sun2000", "phase_voltage", entriesWanted)
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+
+			avgInverterPhaseCurrent, err := metrics.GetMetricAverage("sun2000", "phase_current", entriesWanted)
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+
+			avgHomeLoad := math.Ceil(avgMeterPhaseVoltage * avgMeterPhaseCurrent) - math.Ceil(avgInverterPhaseVoltage * avgInverterPhaseCurrent)
+			if avgHomeLoad < 0 {
+				avgHomeLoad = 0
+			}
 
 			// 2. Get current solar production
-			avgSolarIn, err := metrics.GetMetricAverageSum("sun2000", "input_power", entriesWanted)
+			avgPvPhaseVoltage, err := metrics.GetMetricAverage("sun2000", "pv_voltage", entriesWanted)
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
-			avgSolarIn = math.Ceil(avgSolarIn * 1000)
+
+			avgPvPhaseCurrent, err := metrics.GetMetricAverage("sun2000", "pv_current", entriesWanted)
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+			avgSolarIn := math.Ceil(avgPvPhaseVoltage * avgPvPhaseCurrent)
 			c.logger.WithFields(logrus.Fields{"avgSolarIn": avgSolarIn, "avgHomeLoad": avgHomeLoad}).Info("Solar production and home load")
 
 			// 3. Get current battery capacities
@@ -124,7 +145,7 @@ func (c *Control) Start() {
 			var overProductionWatts int
 			if avgSolarIn > avgHomeLoad {
 				overProduction = math.Ceil((avgSolarIn - avgHomeLoad) / avgSolarIn * 100)
-				overProductionWatts = int(math.Floor(avgSolarIn - avgHomeLoad))
+				overProductionWatts = int(math.Floor(avgHomeLoad - avgSolarIn))
 			} else {
 				overProduction = 0
 				overProductionWatts = 0
