@@ -9,6 +9,7 @@ import (
 	"gijs.eu/vonkje/metrics"
 	"gijs.eu/vonkje/packages/victoria_metrics"
 
+	"github.com/spf13/viper"
 	"github.com/sirupsen/logrus"
 )
 
