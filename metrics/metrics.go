@@ -33,6 +33,7 @@ func init() {
 	metrics = append(metrics, sun2000Metrics...)
 	metrics = append(metrics, luna2000Metrics...)
 	metrics = append(metrics, powerMeterMetrics...)
+	metrics = append(metrics, controlMetrics...)
 
 	for index, metric := range metrics {
 		metric.Values = []MetricValue{}
