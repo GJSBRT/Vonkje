@@ -123,7 +123,7 @@ func (m *Modbus) Start() {
 	}
 }
 
-func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state uint16) error {
+func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state uint16, watts uint) error {
 	inverterConfig, err := m.getInverterConfig(inverter)
 	if err != nil {
 		return err
@@ -141,6 +141,19 @@ func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state
 
 	if !inverterConfig.Luna2000 {
 		return fmt.Errorf("Inverter %s does not have a luna2000 battery connected", inverter)
+	}
+
+	switch state {
+	case MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE:
+		err = connection.client.WriteUint32(MODBUS_ADDRESS_BATTERY_1_FORCIBLE_CHARGE_POWER, uint32(watts))
+		if err != nil {
+			return err
+		}
+	case MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE:
+		err = connection.client.WriteUint32(MODBUS_ADDRESS_BATTERY_1_FORCIBLE_DISCHARGE_POWER, uint32(watts))
+		if err != nil {
+			return err
+		}
 	}
 
 	err = connection.client.WriteRegister(MODBUS_ADDRESS_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE, state)

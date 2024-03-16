@@ -70,7 +70,7 @@ func (c *Control) Start() {
 	entriesWanted := uint(c.config.MetricsAvgPeriod * (60 / viper.GetInt("modbus.read-metrics-interval")))
 	metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 0)
 	metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
-	metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0
+	metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 	for {
 		select {
@@ -121,10 +121,13 @@ func (c *Control) Start() {
 
 			// Get over production in percentage
 			var overProduction float64
+			var overProductionWatts int
 			if avgSolarIn > avgHomeLoad {
 				overProduction = math.Ceil((avgSolarIn - avgHomeLoad) / avgSolarIn * 100)
+				overProductionWatts = int(math.Floor(avgSolarIn - avgHomeLoad))
 			} else {
 				overProduction = 0
+				overProductionWatts = 0
 			}
 			metrics.SetMetricValue("control", "over_production", map[string]string{}, overProduction)
 			c.logger.WithFields(logrus.Fields{"overProduction": overProduction}).Info("Over production")
@@ -133,17 +136,20 @@ func (c *Control) Start() {
 			if overProduction > float64(c.config.MinimumSolarOverProduction) {
 				metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
 
+				// charge batteries with 5% less than over production
+				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * 0.95))
+
 				for _, battery := range batteries {
 					if battery.capacity < 100 {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Battery is not fully charged, starting charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE, batteryChargeWatts)
 						if err != nil {
 							c.errChannel <- err
 							continue
 						}
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is fully charged, stopping charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP, batteryChargeWatts)
 						if err != nil {
 							c.errChannel <- err
 							continue
@@ -174,7 +180,7 @@ func (c *Control) Start() {
 
 							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Discharging battery")
 
-							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE)
+							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, 5000)
 							if err != nil {
 								c.errChannel <- err
 							}
@@ -184,7 +190,7 @@ func (c *Control) Start() {
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")
 
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP, 5000)
 						if err != nil {
 							c.errChannel <- err
 						}
