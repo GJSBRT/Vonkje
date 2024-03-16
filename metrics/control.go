@@ -6,7 +6,7 @@ var controlMetrics = []Metric{
 		Name: "action",
 		Help: "The what action is currently being executed",
 		Fields: []string{
-			"solar",
+			"action",
 		},
 	},
 	{
