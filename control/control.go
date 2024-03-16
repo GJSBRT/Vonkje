@@ -111,18 +111,12 @@ func (c *Control) Start() {
 			}
 
 			// 2. Get current solar production
-			avgPvPhaseVoltage, err := metrics.GetMetricAverage("sun2000", "pv_voltage", entriesWanted)
+			avgSolarIn, err := metrics.GetMetricAverage("sun2000", "input_power", entriesWanted)
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
-
-			avgPvPhaseCurrent, err := metrics.GetMetricAverage("sun2000", "pv_current", entriesWanted)
-			if err != nil {
-				c.errChannel <- err
-				continue
-			}
-			avgSolarIn := math.Ceil(avgPvPhaseVoltage * avgPvPhaseCurrent)
+			avgSolarIn = math.Floor(avgSolarIn * 1000)
 			c.logger.WithFields(logrus.Fields{"avgSolarIn": avgSolarIn, "avgHomeLoad": avgHomeLoad}).Info("Solar production and home load")
 
 			// 3. Get current battery capacities
