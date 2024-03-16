@@ -59,7 +59,7 @@ func (c *Control) Start() {
 	}
 
 	c.logger.Infof("Waiting %d seconds before starting control loop to collect metrics", viper.GetInt("modbus.read-metrics-interval"))
-	time.Sleep(time.Duration(viper.GetInt("modbus.read-metrics-interval")) * time.Minute)
+	time.Sleep(time.Duration(viper.GetInt("modbus.read-metrics-interval")) * time.Second)
 
 	c.logger.Info("Starting control loop")
 
