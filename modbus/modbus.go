@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"gijs.eu/vonkje/utils"
+	"gijs.eu/vonkje/metrics"
 
 	"github.com/sirupsen/logrus"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/simonvetter/modbus"
 )
 
@@ -160,41 +160,41 @@ func (m *Modbus) updateLuna2000Metrics(connection *Connection, inverter Inverter
 	if err != nil {
 		return err
 	}
-	runningStatusGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(runningStatus))
+	metrics.SetMetricValue("luna2000", "running_status", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(runningStatus))
 
 	chargingStatus, err := connection.client.ReadUint32(MODBUS_BATTERY_1_CHARGING_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if chargingStatus > 999999 {
-		chargingStatusGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(0)
+		metrics.SetMetricValue("luna2000", "charging_status", map[string]string{"inverter": inverter.Name, "battery": "1"}, 0)
 	} else {
-		chargingStatusGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(chargingStatus))
+		metrics.SetMetricValue("luna2000", "charging_status", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(chargingStatus))
 	}
 
 	busVoltage, err := connection.client.ReadRegister(MODBUS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	busVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(busVoltage) / 10)
+	metrics.SetMetricValue("luna2000", "bus_voltage", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(busVoltage) / 10)
 
 	batteryCapacity, err := connection.client.ReadRegister(MODBUS_BATTERY_1_CAPACITY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	batteryCapacityGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(batteryCapacity) / 10)
+	metrics.SetMetricValue("luna2000", "battery_capacity", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(batteryCapacity) / 10)
 
 	totalCharge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_CHARGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	totalChargeGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(totalCharge) / 100)
+	metrics.SetMetricValue("luna2000", "total_charge", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(totalCharge) / 100)
 
 	totalDischarge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_DISCHARGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	totalDischargeGauge.With(prometheus.Labels{"inverter": inverter.Name, "battery": "1"}).Set(float64(totalDischarge) / 100)
+	metrics.SetMetricValue("luna2000", "total_discharge", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(totalDischarge) / 100)
 
 	return nil
 }
@@ -211,13 +211,13 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	if err != nil {
 		return err
 	}
-	powerMeterStatusGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(status))
+	metrics.SetMetricValue("power_meter", "status", map[string]string{"inverter": inverter.Name}, float64(status))
 
 	powerMeterPhaseAVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterPhaseVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "A"}).Set(float64(powerMeterPhaseAVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(powerMeterPhaseAVoltage) / 10)
 
 	var powerMeterPhaseACurrentResult uint32
 	powerMeterPhaseACurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
@@ -234,13 +234,13 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		powerMeterPhaseACurrentResult = powerMeterPhaseACurrent
 	}
-	powerMeterPhaseCurrentGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "A"}).Set(float64(powerMeterPhaseACurrentResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(powerMeterPhaseACurrentResult) / 100)
 
 	powerMeterPhaseBVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterPhaseVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "B"}).Set(float64(powerMeterPhaseBVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(powerMeterPhaseBVoltage) / 10)
 
 	var powerMeterPhaseBCurrentResult uint32
 	powerMeterPhaseBCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
@@ -257,13 +257,13 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		powerMeterPhaseBCurrentResult = powerMeterPhaseBCurrent
 	}
-	powerMeterPhaseCurrentGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "B"}).Set(float64(powerMeterPhaseBCurrentResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(powerMeterPhaseBCurrentResult) / 100)
 
 	powerMeterPhaseCVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterPhaseVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "C"}).Set(float64(powerMeterPhaseCVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(powerMeterPhaseCVoltage) / 10)
 
 	var powerMeterPhaseCCurrentResult uint32
 	powerMeterPhaseCCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
@@ -280,7 +280,7 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		powerMeterPhaseCCurrentResult = powerMeterPhaseCCurrent
 	}
-	powerMeterPhaseCurrentGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "C"}).Set(float64(powerMeterPhaseCCurrentResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(powerMeterPhaseCCurrentResult) / 100)
 
 	var powerMeterActivePowerResult uint32
 	powerMeterActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
@@ -297,61 +297,61 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		powerMeterActivePowerResult = powerMeterActivePower
 	}
-	powerMeterActivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerMeterActivePowerResult) / 100)
+	metrics.SetMetricValue("power_meter", "active_power", map[string]string{"inverter": inverter.Name}, float64(powerMeterActivePowerResult) / 100)
 
 	powerMeterReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterReactivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerMeterReactivePower))
+	metrics.SetMetricValue("power_meter", "reactive_power", map[string]string{"inverter": inverter.Name}, float64(powerMeterReactivePower) / 100)
 
 	powerMeterPowerFactor, err := connection.client.ReadRegister(MODBUS_POWER_METER_POWER_FACTOR, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterPowerFactorGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerMeterPowerFactor) / 1000)
+	metrics.SetMetricValue("power_meter", "power_factor", map[string]string{"inverter": inverter.Name}, float64(powerMeterPowerFactor) / 1000)
 
 	powerMeterFrequency, err := connection.client.ReadRegister(MODBUS_POWER_METER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterFrequencyGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerMeterFrequency) / 100)
+	metrics.SetMetricValue("power_meter", "frequency", map[string]string{"inverter": inverter.Name}, float64(powerMeterFrequency) / 100)
 
 	positiveActiveElectricity, err := connection.client.ReadUint32(MODBUS_POWER_METER_POSITIVE_ACTIVE_ELECTRICITY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterPositiveActiveElectricityGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(positiveActiveElectricity) / 100)
+	metrics.SetMetricValue("power_meter", "positive_active_electricity", map[string]string{"inverter": inverter.Name}, float64(positiveActiveElectricity) / 100)
 	
 	reverseActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REVERSE_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterReverseActivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(reverseActivePower) / 100)
+	metrics.SetMetricValue("power_meter", "reverse_active_power", map[string]string{"inverter": inverter.Name}, float64(reverseActivePower) / 100)
 
 	accumulatedReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACCUMULATED_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterAccumulatedReactivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(accumulatedReactivePower) / 100)
+	metrics.SetMetricValue("power_meter", "accumulated_reactive_power", map[string]string{"inverter": inverter.Name}, float64(accumulatedReactivePower) / 100)
 
 	abLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_AB_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterLineVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "line": "AB"}).Set(float64(abLineVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "AB"}, float64(abLineVoltage) / 10)
 
 	bcLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_BC_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterLineVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "line": "BC"}).Set(float64(bcLineVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "BC"}, float64(bcLineVoltage) / 10)
 
 	caLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_CA_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterLineVoltageGauge.With(prometheus.Labels{"inverter": inverter.Name, "line": "CA"}).Set(float64(caLineVoltage) / 10)
+	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "CA"}, float64(caLineVoltage) / 10)
 
 	var phaseAActivePowerResult uint32
 	powerMeterPhaseAActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
@@ -368,7 +368,7 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		phaseAActivePowerResult = powerMeterPhaseAActivePower
 	}
-	powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "A"}).Set(float64(phaseAActivePowerResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseAActivePowerResult) / 100)
 
 	var phaseBActivePowerResult uint32
 	powerMeterPhaseBActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
@@ -385,7 +385,7 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		phaseBActivePowerResult = powerMeterPhaseBActivePower
 	}
-	powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "B"}).Set(float64(phaseBActivePowerResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBActivePowerResult) / 100)
 
 	var phaseCActivePowerResult uint32
 	powerMeterPhaseCActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
@@ -402,13 +402,13 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	} else {
 		phaseCActivePowerResult = powerMeterPhaseCActivePower
 	}
-	powerMeterPhaseActivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name, "phase": "C"}).Set(float64(phaseCActivePowerResult) / 100)
+	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCActivePowerResult) / 100)
 
 	powerMeterModelResult, err := connection.client.ReadRegister(MODBUS_POWER_METER_MODEL_RESULT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	powerMeterModelResultGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerMeterModelResult))
+	metrics.SetMetricValue("power_meter", "model_result", map[string]string{"inverter": inverter.Name}, float64(powerMeterModelResult))
 
 	return nil
 }
@@ -424,130 +424,128 @@ func (m *Modbus) updateSun2000Metrics(connection *Connection, inverter Inverter)
 	// string 1
 	pv1Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV1_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	pvVoltage.With(prometheus.Labels{"inverter": inverter.Name, "string": "1"}).Set(float64(pv1Voltage) / 10)
+	metrics.SetMetricValue("sun2000", "pv_voltage", map[string]string{"inverter": inverter.Name, "string": "1"}, float64(pv1Voltage) / 10)
 
 	pv1Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV1_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	pvCurrent.With(prometheus.Labels{"inverter": inverter.Name, "string": "1"}).Set(float64(pv1Current) / 100)
+	metrics.SetMetricValue("sun2000", "pv_current", map[string]string{"inverter": inverter.Name, "string": "1"}, float64(pv1Current) / 100)
 
 	// string 2
 	pv2Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV2_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	pvVoltage.With(prometheus.Labels{"inverter": inverter.Name, "string": "2"}).Set(float64(pv2Voltage) / 10)
+	metrics.SetMetricValue("sun2000", "pv_voltage", map[string]string{"inverter": inverter.Name, "string": "2"}, float64(pv2Voltage) / 10)
 
 	pv2Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV2_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	pvCurrent.With(prometheus.Labels{"inverter": inverter.Name, "string": "2"}).Set(float64(pv2Current) / 100)
+	metrics.SetMetricValue("sun2000", "pv_current", map[string]string{"inverter": inverter.Name, "string": "2"}, float64(pv2Current) / 100)
 
 
 	// phase A
 	phaseAVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseVoltage.With(prometheus.Labels{"inverter": inverter.Name, "phase": "A"}).Set(float64(phaseAVoltage) / 10)
+	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseAVoltage) / 10)
 
 	phaseACurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseCurrent.With(prometheus.Labels{"inverter": inverter.Name, "phase": "A"}).Set(float64(phaseACurrent) / 1000)
+	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseACurrent) / 1000)
 
 	// phase B
 	phaseBVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseVoltage.With(prometheus.Labels{"inverter": inverter.Name, "phase": "B"}).Set(float64(phaseBVoltage) / 10)
+	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBVoltage) / 10)
 
 	phaseBCurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseCurrent.With(prometheus.Labels{"inverter": inverter.Name, "phase": "B"}).Set(float64(phaseBCurrent) / 1000)
+	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBCurrent) / 1000)
 
 	// phase C
 	phaseCVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseVoltage.With(prometheus.Labels{"inverter": inverter.Name, "phase": "C"}).Set(float64(phaseCVoltage) / 10)
+	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCVoltage) / 10)
 
 	phaseCCurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	phaseCurrent.With(prometheus.Labels{"inverter": inverter.Name, "phase": "C"}).Set(float64(phaseCCurrent) / 1000)
+	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCCurrent) / 1000)
 
-
-	// other
 	inputPower, err := connection.client.ReadUint32(MODBUS_INVERTER_INPUT_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	sun2000InputPowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(inputPower) / 1000)
+	metrics.SetMetricValue("sun2000", "input_power", map[string]string{"inverter": inverter.Name}, float64(inputPower) / 1000)
 
 	stateOne, err := connection.client.ReadUint32(MODBUS_INVERTER_STATE_1, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	sun2000StateGauge.With(prometheus.Labels{"inverter": inverter.Name, "state": "1"}).Set(float64(stateOne))
+	metrics.SetMetricValue("sun2000", "state", map[string]string{"inverter": inverter.Name, "state": "1"}, float64(stateOne))
 
 	inverterDeviceStatus, err := connection.client.ReadUint32(MODBUS_INVERTER_DEVICE_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	sun2000DeviceStatusGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(inverterDeviceStatus))
+	metrics.SetMetricValue("sun2000", "device_status", map[string]string{"inverter": inverter.Name}, float64(inverterDeviceStatus))
 
 	activePower, err := connection.client.ReadUint32(MODBUS_INVERTER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	activePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(activePower) / 1000)
+	metrics.SetMetricValue("sun2000", "active_power", map[string]string{"inverter": inverter.Name}, float64(activePower) / 1000)
 
 	reactivePower, err := connection.client.ReadUint32(MODBUS_INVERTER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	reactivePowerGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(reactivePower) / 1000)
+	metrics.SetMetricValue("sun2000", "reactive_power", map[string]string{"inverter": inverter.Name}, float64(reactivePower) / 1000)
 
 	powerFactor, err := connection.client.ReadRegister(MODBUS_INVERTER_POWER_FACTOR, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	powerFactorGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(powerFactor) / 1000)
+	metrics.SetMetricValue("sun2000", "power_factor", map[string]string{"inverter": inverter.Name}, float64(powerFactor) / 1000)
 
 	gridFrequency, err := connection.client.ReadRegister(MODBUS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	gridFrequencyGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(gridFrequency) / 100)
+	metrics.SetMetricValue("sun2000", "frequency", map[string]string{"inverter": inverter.Name}, float64(gridFrequency) / 100)
 
 	inverterEfficiency, err := connection.client.ReadRegister(MODBUS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	inverterEfficiencyGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(inverterEfficiency) / 100)
+	metrics.SetMetricValue("sun2000", "efficiency", map[string]string{"inverter": inverter.Name}, float64(inverterEfficiency) / 100)
 
 	cabinetTemperature, err := connection.client.ReadRegister(MODBUS_INVERTER_CABINET_TEMPERATURE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	cabinetTemperatureGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(cabinetTemperature) / 10)
+	metrics.SetMetricValue("sun2000", "cabinet_temperature", map[string]string{"inverter": inverter.Name}, float64(cabinetTemperature) / 10)
 
 	isulationResistance, err := connection.client.ReadRegister(MODBUS_INVERTER_INSULATION_RESISTANCE, modbus.HOLDING_REGISTER)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	isulationResistanceGauge.With(prometheus.Labels{"inverter": inverter.Name}).Set(float64(isulationResistance) / 10)
+	metrics.SetMetricValue("sun2000", "isulation_resistance", map[string]string{"inverter": inverter.Name}, float64(isulationResistance) / 10)
 
 	return nil
 }
