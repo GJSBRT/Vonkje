@@ -123,6 +123,58 @@ func (m *Modbus) Start() {
 	}
 }
 
+func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state uint16) error {
+	inverterConfig, err := m.getInverterConfig(inverter)
+	if err != nil {
+		return err
+	}
+
+	connection, err := m.getConnection(inverter)
+	if err != nil {
+		return err
+	}
+
+	err = connection.client.SetUnitId(inverterConfig.UnitId)
+	if err != nil {
+		return err
+	}
+
+	if !inverterConfig.Luna2000 {
+		return fmt.Errorf("Inverter %s does not have a luna2000 battery connected", inverter)
+	}
+
+	err = connection.client.WriteRegister(MODBUS_ADDRESS_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE, state)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Modbus) getInverterConfig(inverter string) (Inverter, error) {
+	for _, connection := range m.connections {
+		for _, inv := range connection.config.Inverters {
+			if inv.Name == inverter {
+				return inv, nil
+			}
+		}
+	}
+
+	return Inverter{}, fmt.Errorf("Inverter %s not found", inverter)
+}
+
+func (m *Modbus) getConnection(inverter string) (*Connection, error) {
+	for _, connection := range m.connections {
+		for _, inv := range connection.config.Inverters {
+			if inv.Name == inverter {
+				return connection, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("Inverter %s not found", inverter)
+}
+
 func (m *Modbus) updateMetrics() {
 	for _, connection := range m.connections {
 		for _, inverter := range connection.config.Inverters {
@@ -156,13 +208,13 @@ func (m *Modbus) updateLuna2000Metrics(connection *Connection, inverter Inverter
 		return err
 	}
 
-	runningStatus, err := connection.client.ReadRegister(MODBUS_BATTERY_1_RUNNING_STATUS, modbus.HOLDING_REGISTER)
+	runningStatus, err := connection.client.ReadRegister(MODBUS_ADDRESS_BATTERY_1_RUNNING_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("luna2000", "running_status", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(runningStatus))
 
-	chargingStatus, err := connection.client.ReadUint32(MODBUS_BATTERY_1_CHARGING_STATUS, modbus.HOLDING_REGISTER)
+	chargingStatus, err := connection.client.ReadUint32(MODBUS_ADDRESS_BATTERY_1_CHARGING_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
@@ -172,25 +224,25 @@ func (m *Modbus) updateLuna2000Metrics(connection *Connection, inverter Inverter
 		metrics.SetMetricValue("luna2000", "charging_status", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(chargingStatus))
 	}
 
-	busVoltage, err := connection.client.ReadRegister(MODBUS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
+	busVoltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_BATTERY_1_BUS_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("luna2000", "bus_voltage", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(busVoltage) / 10)
 
-	batteryCapacity, err := connection.client.ReadRegister(MODBUS_BATTERY_1_CAPACITY, modbus.HOLDING_REGISTER)
+	batteryCapacity, err := connection.client.ReadRegister(MODBUS_ADDRESS_BATTERY_1_CAPACITY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("luna2000", "battery_capacity", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(batteryCapacity) / 10)
 
-	totalCharge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_CHARGE, modbus.HOLDING_REGISTER)
+	totalCharge, err := connection.client.ReadUint32(MODBUS_ADDRESS_BATTERY_1_TOTAL_CHARGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("luna2000", "total_charge", map[string]string{"inverter": inverter.Name, "battery": "1"}, float64(totalCharge) / 100)
 
-	totalDischarge, err := connection.client.ReadUint32(MODBUS_BATTERY_1_TOTAL_DISCHARGE, modbus.HOLDING_REGISTER)
+	totalDischarge, err := connection.client.ReadUint32(MODBUS_ADDRESS_BATTERY_1_TOTAL_DISCHARGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
@@ -207,25 +259,25 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 		return err
 	}
 
-	status, err := connection.client.ReadRegister(MODBUS_POWER_METER_STATUS, modbus.HOLDING_REGISTER)
+	status, err := connection.client.ReadRegister(MODBUS_ADDRESS_POWER_METER_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "status", map[string]string{"inverter": inverter.Name}, float64(status))
 
-	powerMeterPhaseAVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
+	powerMeterPhaseAVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(powerMeterPhaseAVoltage) / 10)
 
 	var powerMeterPhaseACurrentResult uint32
-	powerMeterPhaseACurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
+	powerMeterPhaseACurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseACurrent > 999999 {
-		powerMeterPhaseACurrentBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_A_CURRENT, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseACurrentBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_A_CURRENT, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -236,19 +288,19 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	}
 	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(powerMeterPhaseACurrentResult) / 100)
 
-	powerMeterPhaseBVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
+	powerMeterPhaseBVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(powerMeterPhaseBVoltage) / 10)
 
 	var powerMeterPhaseBCurrentResult uint32
-	powerMeterPhaseBCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
+	powerMeterPhaseBCurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseBCurrent > 999999 {
-		powerMeterPhaseBCurrentBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_B_CURRENT, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseBCurrentBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_B_CURRENT, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -259,19 +311,19 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	}
 	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(powerMeterPhaseBCurrentResult) / 100)
 
-	powerMeterPhaseCVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
+	powerMeterPhaseCVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(powerMeterPhaseCVoltage) / 10)
 
 	var powerMeterPhaseCCurrentResult uint32
-	powerMeterPhaseCCurrent, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
+	powerMeterPhaseCCurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseCCurrent > 999999 {
-		powerMeterPhaseCCurrentBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_C_CURRENT, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseCCurrentBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_C_CURRENT, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -283,12 +335,12 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	metrics.SetMetricValue("power_meter", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(powerMeterPhaseCCurrentResult) / 100)
 
 	var powerMeterActivePowerResult uint32
-	powerMeterActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	powerMeterActivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterActivePower > 999999 {
-		powerMeterActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+		powerMeterActivePowerBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -299,67 +351,67 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	}
 	metrics.SetMetricValue("power_meter", "active_power", map[string]string{"inverter": inverter.Name}, float64(powerMeterActivePowerResult) / 100)
 
-	powerMeterReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
+	powerMeterReactivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "reactive_power", map[string]string{"inverter": inverter.Name}, float64(powerMeterReactivePower) / 100)
 
-	powerMeterPowerFactor, err := connection.client.ReadRegister(MODBUS_POWER_METER_POWER_FACTOR, modbus.HOLDING_REGISTER)
+	powerMeterPowerFactor, err := connection.client.ReadRegister(MODBUS_ADDRESS_POWER_METER_POWER_FACTOR, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "power_factor", map[string]string{"inverter": inverter.Name}, float64(powerMeterPowerFactor) / 1000)
 
-	powerMeterFrequency, err := connection.client.ReadRegister(MODBUS_POWER_METER_FREQUENCY, modbus.HOLDING_REGISTER)
+	powerMeterFrequency, err := connection.client.ReadRegister(MODBUS_ADDRESS_POWER_METER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "frequency", map[string]string{"inverter": inverter.Name}, float64(powerMeterFrequency) / 100)
 
-	positiveActiveElectricity, err := connection.client.ReadUint32(MODBUS_POWER_METER_POSITIVE_ACTIVE_ELECTRICITY, modbus.HOLDING_REGISTER)
+	positiveActiveElectricity, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_POSITIVE_ACTIVE_ELECTRICITY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "positive_active_electricity", map[string]string{"inverter": inverter.Name}, float64(positiveActiveElectricity) / 100)
 	
-	reverseActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_REVERSE_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	reverseActivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_REVERSE_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "reverse_active_power", map[string]string{"inverter": inverter.Name}, float64(reverseActivePower) / 100)
 
-	accumulatedReactivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_ACCUMULATED_REACTIVE_POWER, modbus.HOLDING_REGISTER)
+	accumulatedReactivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_ACCUMULATED_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "accumulated_reactive_power", map[string]string{"inverter": inverter.Name}, float64(accumulatedReactivePower) / 100)
 
-	abLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_AB_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+	abLineVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_AB_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "AB"}, float64(abLineVoltage) / 10)
 
-	bcLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_BC_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+	bcLineVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_BC_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "BC"}, float64(bcLineVoltage) / 10)
 
-	caLineVoltage, err := connection.client.ReadUint32(MODBUS_POWER_METER_CA_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
+	caLineVoltage, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_CA_LINE_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("power_meter", "line_voltage", map[string]string{"inverter": inverter.Name, "line": "CA"}, float64(caLineVoltage) / 10)
 
 	var phaseAActivePowerResult uint32
-	powerMeterPhaseAActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	powerMeterPhaseAActivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_A_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseAActivePower > 999999 {
-		powerMeterPhaseAActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_A_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseAActivePowerBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_A_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -371,12 +423,12 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseAActivePowerResult) / 100)
 
 	var phaseBActivePowerResult uint32
-	powerMeterPhaseBActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	powerMeterPhaseBActivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_B_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseBActivePower > 999999 {
-		powerMeterPhaseBActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_B_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseBActivePowerBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_B_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -388,12 +440,12 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBActivePowerResult) / 100)
 
 	var phaseCActivePowerResult uint32
-	powerMeterPhaseCActivePower, err := connection.client.ReadUint32(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	powerMeterPhaseCActivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_POWER_METER_PHASE_C_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	if powerMeterPhaseCActivePower > 999999 {
-		powerMeterPhaseCActivePowerBytes, err := connection.client.ReadBytes(MODBUS_POWER_METER_PHASE_C_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+		powerMeterPhaseCActivePowerBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_POWER_METER_PHASE_C_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
 		if err != nil {
 			return err
 		}
@@ -404,7 +456,7 @@ func (m *Modbus) updatePowerMeterMetrics(connection *Connection, inverter Invert
 	}
 	metrics.SetMetricValue("power_meter", "phase_active_power", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCActivePowerResult) / 100)
 
-	powerMeterModelResult, err := connection.client.ReadRegister(MODBUS_POWER_METER_MODEL_RESULT, modbus.HOLDING_REGISTER)
+	powerMeterModelResult, err := connection.client.ReadRegister(MODBUS_ADDRESS_POWER_METER_MODEL_RESULT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
@@ -422,26 +474,26 @@ func (m *Modbus) updateSun2000Metrics(connection *Connection, inverter Inverter)
 	}
 
 	// string 1
-	pv1Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV1_VOLTAGE, modbus.HOLDING_REGISTER)
+	pv1Voltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PV1_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "pv_voltage", map[string]string{"inverter": inverter.Name, "string": "1"}, float64(pv1Voltage) / 10)
 
-	pv1Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV1_CURRENT, modbus.HOLDING_REGISTER)
+	pv1Current, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PV1_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "pv_current", map[string]string{"inverter": inverter.Name, "string": "1"}, float64(pv1Current) / 100)
 
 	// string 2
-	pv2Voltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PV2_VOLTAGE, modbus.HOLDING_REGISTER)
+	pv2Voltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PV2_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "pv_voltage", map[string]string{"inverter": inverter.Name, "string": "2"}, float64(pv2Voltage) / 10)
 
-	pv2Current, err := connection.client.ReadRegister(MODBUS_INVERTER_PV2_CURRENT, modbus.HOLDING_REGISTER)
+	pv2Current, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PV2_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
@@ -449,99 +501,99 @@ func (m *Modbus) updateSun2000Metrics(connection *Connection, inverter Inverter)
 
 
 	// phase A
-	phaseAVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
+	phaseAVoltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PHASE_A_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseAVoltage) / 10)
 
-	phaseACurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
+	phaseACurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_PHASE_A_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "A"}, float64(phaseACurrent) / 1000)
 
 	// phase B
-	phaseBVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
+	phaseBVoltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PHASE_B_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBVoltage) / 10)
 
-	phaseBCurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
+	phaseBCurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_PHASE_B_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "B"}, float64(phaseBCurrent) / 1000)
 
 	// phase C
-	phaseCVoltage, err := connection.client.ReadRegister(MODBUS_INVERTER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
+	phaseCVoltage, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_PHASE_C_VOLTAGE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_voltage", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCVoltage) / 10)
 
-	phaseCCurrent, err := connection.client.ReadUint32(MODBUS_INVERTER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
+	phaseCCurrent, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_PHASE_C_CURRENT, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "phase_current", map[string]string{"inverter": inverter.Name, "phase": "C"}, float64(phaseCCurrent) / 1000)
 
-	inputPower, err := connection.client.ReadUint32(MODBUS_INVERTER_INPUT_POWER, modbus.HOLDING_REGISTER)
+	inputPower, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_INPUT_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "input_power", map[string]string{"inverter": inverter.Name}, float64(inputPower) / 1000)
 
-	stateOne, err := connection.client.ReadUint32(MODBUS_INVERTER_STATE_1, modbus.HOLDING_REGISTER)
+	stateOne, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_STATE_1, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "state", map[string]string{"inverter": inverter.Name, "state": "1"}, float64(stateOne))
 
-	inverterDeviceStatus, err := connection.client.ReadUint32(MODBUS_INVERTER_DEVICE_STATUS, modbus.HOLDING_REGISTER)
+	inverterDeviceStatus, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_DEVICE_STATUS, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "device_status", map[string]string{"inverter": inverter.Name}, float64(inverterDeviceStatus))
 
-	activePower, err := connection.client.ReadUint32(MODBUS_INVERTER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
+	activePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "active_power", map[string]string{"inverter": inverter.Name}, float64(activePower) / 1000)
 
-	reactivePower, err := connection.client.ReadUint32(MODBUS_INVERTER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
+	reactivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "reactive_power", map[string]string{"inverter": inverter.Name}, float64(reactivePower) / 1000)
 
-	powerFactor, err := connection.client.ReadRegister(MODBUS_INVERTER_POWER_FACTOR, modbus.HOLDING_REGISTER)
+	powerFactor, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_POWER_FACTOR, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "power_factor", map[string]string{"inverter": inverter.Name}, float64(powerFactor) / 1000)
 
-	gridFrequency, err := connection.client.ReadRegister(MODBUS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
+	gridFrequency, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "frequency", map[string]string{"inverter": inverter.Name}, float64(gridFrequency) / 100)
 
-	inverterEfficiency, err := connection.client.ReadRegister(MODBUS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
+	inverterEfficiency, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_FREQUENCY, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "efficiency", map[string]string{"inverter": inverter.Name}, float64(inverterEfficiency) / 100)
 
-	cabinetTemperature, err := connection.client.ReadRegister(MODBUS_INVERTER_CABINET_TEMPERATURE, modbus.HOLDING_REGISTER)
+	cabinetTemperature, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_CABINET_TEMPERATURE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
 	metrics.SetMetricValue("sun2000", "cabinet_temperature", map[string]string{"inverter": inverter.Name}, float64(cabinetTemperature) / 10)
 
-	isulationResistance, err := connection.client.ReadRegister(MODBUS_INVERTER_INSULATION_RESISTANCE, modbus.HOLDING_REGISTER)
+	isulationResistance, err := connection.client.ReadRegister(MODBUS_ADDRESS_INVERTER_INSULATION_RESISTANCE, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
