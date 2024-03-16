@@ -152,7 +152,7 @@ func (c *Control) Start() {
 				metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
 
 				// charge batteries with 10% less than over production
-				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * 0.90)))
+				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * 0.90))
 
 				for _, battery := range batteries {
 					if battery.capacity < 100 {
