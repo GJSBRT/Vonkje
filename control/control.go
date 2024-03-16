@@ -68,6 +68,9 @@ func (c *Control) Start() {
 	defer ticker.Stop()
 
 	entriesWanted := uint(c.config.MetricsAvgPeriod * (60 / viper.GetInt("modbus.read-metrics-interval")))
+	metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 0)
+	metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
+	metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0
 
 	for {
 		select {
@@ -155,7 +158,7 @@ func (c *Control) Start() {
 
 			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
 			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn)
-			batteriesRequired := math.Ceil(wattsRequired / 500)
+			batteriesRequired := math.Ceil(wattsRequired / 5000)
 			if avgSolarIn < avgHomeLoad {
 				if batteriesRequired > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
@@ -167,7 +170,7 @@ func (c *Control) Start() {
 					if batteriesRequired > 0 {
 						if battery.capacity > 5 {
 							batteriesRequired--
-							wattsRequired -= 1500
+							wattsRequired -= 5000
 
 							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Discharging battery")
 
