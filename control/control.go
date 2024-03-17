@@ -141,14 +141,14 @@ func (c *Control) Start() {
 				for _, battery := range batteries {
 					if battery.capacity < 100 {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": batteryChargeWatts}).Info("Battery is not fully charged, starting charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE, batteryChargeWatts)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, batteryChargeWatts)
 						if err != nil {
 							c.errChannel <- err
 							continue
 						}
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "watts": batteryChargeWatts}).Info("Battery is fully charged, stopping charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP, batteryChargeWatts)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, batteryChargeWatts)
 						if err != nil {
 							c.errChannel <- err
 							continue
@@ -163,23 +163,28 @@ func (c *Control) Start() {
 
 			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
 			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn)
-			batteriesRequired := math.Ceil(wattsRequired / 5000)
 			if avgSolarIn < avgHomeLoad {
-				if batteriesRequired > 0 {
+				if wattsRequired > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
 				} else {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
 				}
 
 				for _, battery := range batteries {
-					if batteriesRequired > 0 {
+					if wattsRequired > 0 {
 						if battery.capacity > 5 {
-							batteriesRequired--
-							wattsRequired -= 5000
+							var useWatts uint
+							if wattsRequired > 5000 {
+								useWatts = 5000
+								wattsRequired -= 5000
+							} else {
+								useWatts = uint(wattsRequired)
+								wattsRequired = 0
+							}
 
 							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Discharging battery")
 
-							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, 5000)
+							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, useWatts)
 							if err != nil {
 								c.errChannel <- err
 							}
@@ -187,7 +192,7 @@ func (c *Control) Start() {
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")
 
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP, 5000)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, 0)
 						if err != nil {
 							c.errChannel <- err
 						}
