@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"fmt"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -22,10 +24,16 @@ type Metric struct {
 
 var metrics = []Metric{}
 
+var (
+	ErrNotEnoughValues = fmt.Errorf("Not enough values")
+	ErrMetricNotFound = fmt.Errorf("Metric not found")
+)
+
 func init() {
 	metrics = append(metrics, sun2000Metrics...)
 	metrics = append(metrics, luna2000Metrics...)
 	metrics = append(metrics, powerMeterMetrics...)
+	metrics = append(metrics, controlMetrics...)
 
 	for index, metric := range metrics {
 		metric.Values = []MetricValue{}
@@ -68,7 +76,7 @@ func GetMetric(namespace string, name string) *Metric {
 	return nil
 }
 
-func GetMetricValueAverageLastMin(namespace string, name string, labels map[string]string, minutes uint) float64 {
+func GetMetricValueAverage(namespace string, name string, labels map[string]string, entries uint) (float64, error) {
 	var newMetric *Metric
 	for _, metric := range metrics {
 		if metric.Namespace == namespace && metric.Name == name {
@@ -78,7 +86,7 @@ func GetMetricValueAverageLastMin(namespace string, name string, labels map[stri
 	}
 
 	if newMetric == nil {
-		return 0
+		return 0, ErrMetricNotFound
 	}
 
 	var matches *MetricValue
@@ -99,15 +107,132 @@ func GetMetricValueAverageLastMin(namespace string, name string, labels map[stri
 	}
 
 	if matches == nil {
-		return 0
+		return 0, ErrMetricNotFound
 	}
 
-	var total float64
-	for _, value := range matches.Values {
-		total += value
+	if uint(len(matches.Values)) < entries {
+		return 0, ErrNotEnoughValues
 	}
 
-	return total / float64(len(matches.Values))
+	var sum float64
+	for i := len(matches.Values) - int(entries); i < len(matches.Values); i++ {
+		sum += matches.Values[i]
+	}
+
+	return sum / float64(entries), nil
+}
+
+func GetMetricAverage(namespace string, name string, entries uint) (float64, error) {
+	var newMetric *Metric
+	for _, metric := range metrics {
+		if metric.Namespace == namespace && metric.Name == name {
+			newMetric = &metric
+			break
+		}
+	}
+
+	if newMetric == nil {
+		return 0, ErrMetricNotFound
+	}
+
+	if len(newMetric.Values) == 0 {
+		return 0, ErrNotEnoughValues
+	}
+
+	var totalEntries uint
+	for _, metricValue := range newMetric.Values {
+		totalEntries += uint(len(metricValue.Values))
+	}
+
+	if totalEntries < entries {
+		return 0, ErrNotEnoughValues
+	}
+
+	var sum float64
+	for _, metricValue := range newMetric.Values {
+		for i := len(metricValue.Values) - int(entries); i < len(metricValue.Values); i++ {
+			sum += metricValue.Values[i]
+		}
+	}
+
+	return sum / float64(entries * uint(len(newMetric.Values))), nil
+}
+
+func GetMetricLastEntryAverage(namespace string, name string) (float64, error) {
+	var newMetric *Metric
+	for _, metric := range metrics {
+		if metric.Namespace == namespace && metric.Name == name {
+			newMetric = &metric
+			break
+		}
+	}
+
+	if newMetric == nil {
+		return 0, ErrMetricNotFound
+	}
+
+	if len(newMetric.Values) == 0 {
+		return 0, ErrNotEnoughValues
+	}
+
+	var sum float64
+	for _, metricValue := range newMetric.Values {
+		sum += metricValue.Values[len(metricValue.Values) - 1]
+	}
+
+	return sum / float64(len(newMetric.Values)), nil
+}
+
+func GetMetricAverageSum(namespace string, name string, entries uint) (float64, error) {
+	var newMetric *Metric
+	for _, metric := range metrics {
+		if metric.Namespace == namespace && metric.Name == name {
+			newMetric = &metric
+			break
+		}
+	}
+
+	if newMetric == nil {
+		return 0, ErrMetricNotFound
+	}
+
+	if len(newMetric.Values) == 0 {
+		return 0, ErrNotEnoughValues
+	}
+
+	var totalEntries uint
+	for _, metricValue := range newMetric.Values {
+		totalEntries += uint(len(metricValue.Values))
+	}
+
+	if totalEntries < entries {
+		return 0, ErrNotEnoughValues
+	}
+
+	var sum float64
+	for _, metricValue := range newMetric.Values {
+		for i := len(metricValue.Values) - int(entries); i < len(metricValue.Values); i++ {
+			sum += metricValue.Values[i]
+		}
+	}
+
+	return sum / float64(entries), nil
+}
+
+func GetMetricValues(namespace string, name string) ([]MetricValue, error) {
+	var newMetric *Metric
+	for _, metric := range metrics {
+		if metric.Namespace == namespace && metric.Name == name {
+			newMetric = &metric
+			break
+		}
+	}
+
+	if newMetric == nil {
+		return nil, ErrMetricNotFound
+	}
+
+	return newMetric.Values, nil
 }
 
 func SetMetricValue(namespace string, name string, labels map[string]string, value float64) {
@@ -126,7 +251,8 @@ func SetMetricValue(namespace string, name string, labels map[string]string, val
 	}
 
 	var matches *MetricValue
-	for _, metricValue := range newMetric.Values {
+	var matchesIndex int
+	for i, metricValue := range newMetric.Values {
 		match := true
 		for key, value := range labels {
 			if metricValue.Fields[key] != value {
@@ -139,6 +265,7 @@ func SetMetricValue(namespace string, name string, labels map[string]string, val
 			continue
 		}
 
+		matchesIndex = i
 		matches = &metricValue
 	}
 
@@ -147,6 +274,7 @@ func SetMetricValue(namespace string, name string, labels map[string]string, val
 		if len(matches.Values) > 5760 { // 1 days worth of data if we have a value every 15 seconds
 			matches.Values = matches.Values[1:]
 		}
+		newMetric.Values[matchesIndex] = *matches
 	} else {
 		newMetric.Values = append(newMetric.Values, MetricValue{
 			Fields: labels,

@@ -9,6 +9,7 @@ import (
 
 	"gijs.eu/vonkje/http"
 	"gijs.eu/vonkje/modbus"
+	"gijs.eu/vonkje/control"
 	"gijs.eu/vonkje/power_prices"
 	"gijs.eu/vonkje/packages/victoria_metrics"
 
@@ -22,6 +23,7 @@ type Config struct {
 	Modbus 				modbus.Config `mapstructure:"modbus"`
 	VictoriaMetrics 	victoria_metrics.Config `mapstructure:"victoria-metrics"`
 	PowerPrices 		power_prices.Config `mapstructure:"power-prices"`
+	Control 			control.Config `mapstructure:"control"`
 }
 
 var (
@@ -98,6 +100,9 @@ func main() {
 
 	powerPricesClient := power_prices.New(config.PowerPrices, errChannel, stopCtx, logger, victoriaMetricsClient)
 	go powerPricesClient.Start()
+
+	controlClient := control.New(config.Control, errChannel, stopCtx, logger, victoriaMetricsClient, modbusClient)
+	go controlClient.Start()
 
 	<-stopCtx.Done()
 
