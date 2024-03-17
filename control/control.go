@@ -148,7 +148,8 @@ func (c *Control) Start() {
 						}
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "watts": batteryChargeWatts}).Info("Battery is fully charged, stopping charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, batteryChargeWatts)
+						// Charge with zero watts as the stop command doesn't do anything
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, 0)
 						if err != nil {
 							c.errChannel <- err
 							continue
@@ -182,7 +183,7 @@ func (c *Control) Start() {
 								wattsRequired = 0
 							}
 
-							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Discharging battery")
+							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": useWatts}).Info("Discharging battery")
 
 							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, useWatts)
 							if err != nil {
@@ -192,7 +193,8 @@ func (c *Control) Start() {
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")
 
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, 0)
+						// Charge with zero watts as the stop command doesn't do anything
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, 0)
 						if err != nil {
 							c.errChannel <- err
 						}
