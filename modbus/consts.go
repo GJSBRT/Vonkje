@@ -60,6 +60,8 @@ var (
 		"forcible_charge_discharge_battery_1": 	Register{Namespace: "luna2000",	Name: "forcible_charge_discharge",	Fields: map[string]string{"battery": "1"},	Address: 47100,	Unit: "",		Gain: 1,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: true},
 		"forcible_charge_power_battery_1": 		Register{Namespace: "luna2000",	Name: "forcible_charge_power",		Fields: map[string]string{"battery": "1"},	Address: 47247,	Unit: "kW",		Gain: 1000,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
 		"forcible_discharge_power_battery_1": 	Register{Namespace: "luna2000",	Name: "forcible_discharge_power",	Fields: map[string]string{"battery": "1"},	Address: 47249,	Unit: "kW",		Gain: 1000,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
+		"maximum_charge_power_battery":			Register{Namespace: "luna2000",	Name: "maximum_charge_power",		Fields: map[string]string{"battery": "1"},	Address: 47075,	Unit: "W",		Gain: 1,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
+		"maximum_discharge_power_battery":		Register{Namespace: "luna2000",	Name: "maximum_discharge_power",	Fields: map[string]string{"battery": "1"},	Address: 47077,	Unit: "W",		Gain: 1,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
 	}
 
 	powerMeterRegisters = map[string]Register{
