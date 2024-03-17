@@ -101,7 +101,7 @@ func (c *Control) Start() {
 				continue
 			}
 
-			avgHomeLoad := math.Ceil(avgMeterPhaseVoltage * avgMeterPhaseCurrent) - math.Ceil(avgInverterPhaseVoltage * avgInverterPhaseCurrent)
+			avgHomeLoad := math.Ceil((avgMeterPhaseVoltage * avgMeterPhaseCurrent) - (avgInverterPhaseVoltage * avgInverterPhaseCurrent))
 			if avgHomeLoad < 0 {
 				avgHomeLoad = 0
 			}
@@ -195,8 +195,6 @@ func (c *Control) Start() {
 							if err != nil {
 								c.errChannel <- err
 							}
-
-							continue
 						}
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")

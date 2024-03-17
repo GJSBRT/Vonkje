@@ -78,6 +78,11 @@ func New(
 			return nil, err
 		}
 
+		err := client.SetEncoding(modbus.BIG_ENDIAN, modbus.HIGH_WORD_FIRST)
+		if err != nil {
+			return nil, err
+		}
+
 		logger.Infof("Connected to %s://%s:%d", connectionConfig.Protocol, connectionConfig.IP, connectionConfig.Port)
 		m.connections[fmt.Sprintf("%s:%d", connectionConfig.IP, connectionConfig.Port)] = &Connection{
 			config: connectionConfig,
@@ -129,6 +134,10 @@ func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state
 		return err
 	}
 
+	if !inverterConfig.Luna2000 {
+		return fmt.Errorf("Inverter %s does not have a luna2000 battery connected", inverter)
+	}
+
 	connection, err := m.getConnection(inverter)
 	if err != nil {
 		return err
@@ -137,10 +146,6 @@ func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state
 	err = connection.client.SetUnitId(inverterConfig.UnitId)
 	if err != nil {
 		return err
-	}
-
-	if !inverterConfig.Luna2000 {
-		return fmt.Errorf("Inverter %s does not have a luna2000 battery connected", inverter)
 	}
 
 	switch state {
@@ -570,11 +575,22 @@ func (m *Modbus) updateSun2000Metrics(connection *Connection, inverter Inverter)
 	}
 	metrics.SetMetricValue("sun2000", "device_status", map[string]string{"inverter": inverter.Name}, float64(inverterDeviceStatus))
 
+	var activePowerResult uint32
 	activePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_ACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
 		return err
 	}
-	metrics.SetMetricValue("sun2000", "active_power", map[string]string{"inverter": inverter.Name}, float64(activePower) / 1000)
+	if activePower > 999999 {
+		activePowerBytes, err := connection.client.ReadBytes(MODBUS_ADDRESS_INVERTER_ACTIVE_POWER, 4, modbus.HOLDING_REGISTER)
+		if err != nil {
+			return err
+		}
+		
+		activePowerResult = utils.ConvertTooLargeNumber(activePowerBytes)
+	} else {
+		activePowerResult = activePower
+	}
+	metrics.SetMetricValue("sun2000", "active_power", map[string]string{"inverter": inverter.Name}, float64(activePowerResult) / 1000)
 
 	reactivePower, err := connection.client.ReadUint32(MODBUS_ADDRESS_INVERTER_REACTIVE_POWER, modbus.HOLDING_REGISTER)
 	if err != nil {
