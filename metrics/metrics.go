@@ -183,6 +183,31 @@ func GetMetricLastEntryAverage(namespace string, name string) (float64, error) {
 	return sum / float64(len(newMetric.Values)), nil
 }
 
+func GetMetricLastEntrySum(namespace string, name string) (float64, error) {
+	var newMetric *Metric
+	for _, metric := range metrics {
+		if metric.Namespace == namespace && metric.Name == name {
+			newMetric = &metric
+			break
+		}
+	}
+
+	if newMetric == nil {
+		return 0, ErrMetricNotFound
+	}
+
+	if len(newMetric.Values) == 0 {
+		return 0, ErrNotEnoughValues
+	}
+
+	var sum float64
+	for _, metricValue := range newMetric.Values {
+		sum += metricValue.Values[len(metricValue.Values) - 1]
+	}
+
+	return sum, nil
+}
+
 func GetMetricAverageSum(namespace string, name string, entries uint) (float64, error) {
 	var newMetric *Metric
 	for _, metric := range metrics {
