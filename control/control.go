@@ -77,13 +77,7 @@ func (c *Control) Start() {
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 			// 1. Get current home energy consumption
-			inverterInputPower, err := metrics.GetMetricLastEntrySum("sun2000", "input_power")
-			if err != nil {
-				c.errChannel <- err
-				continue
-			}
-
-			batteryChargingStatus, err := metrics.GetMetricLastEntrySum("luna2000", "charging_status")
+			inverterInputPower, err := metrics.GetMetricLastEntrySum("sun2000", "active_power")
 			if err != nil {
 				c.errChannel <- err
 				continue
@@ -95,7 +89,7 @@ func (c *Control) Start() {
 				continue
 			}
 
-			avgHomeLoad := (inverterInputPower * 1000) - batteryChargingStatus - powerMeterActivePower
+			avgHomeLoad := (inverterInputPower * 1000) - powerMeterActivePower
 			if avgHomeLoad < 0 {
 				avgHomeLoad = 0
 			}
