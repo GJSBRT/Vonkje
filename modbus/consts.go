@@ -1,67 +1,87 @@
 package modbus
 
-// uint16 -> ReadRegister
-// int32 -> ReadUint32
+type RegisterType uint8
+
+type Register struct {
+	Namespace 	string
+	Name 		string
+	Fields 		map[string]string
+	Address 	uint16
+	Unit   		string
+	Gain   		float64
+	Quantity 	uint16
+	Type   		RegisterType
+	Writeable 	bool
+}
 
 const (
-	// Sun2000 Inverter
-	MODBUS_ADDRESS_INVERTER_PV1_VOLTAGE = 32016	// int16 readonly
-	MODBUS_ADDRESS_INVERTER_PV1_CURRENT = 32017	// int16 readonly
-	MODBUS_ADDRESS_INVERTER_PV2_VOLTAGE = 32018	// int16 readonly
-	MODBUS_ADDRESS_INVERTER_PV2_CURRENT = 32019	// int16 readonly
+	RegisterTypeUint16 RegisterType = iota
+	RegisterTypeUint32
+	RegisterTypeInt16
+	RegisterTypeInt32
+)
 
-	MODBUS_ADDRESS_INVERTER_STATE_1 = 32000 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_DEVICE_STATUS = 32089 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_INPUT_POWER = 32064	// int32 readonly
+const (
+	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP uint16 = iota
+	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE
+	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE
+)
 
-	MODBUS_ADDRESS_INVERTER_PHASE_A_VOLTAGE = 32069 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_PHASE_B_VOLTAGE = 32070 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_PHASE_C_VOLTAGE = 32071 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_PHASE_A_CURRENT = 32072	// int32 readonly
-	MODBUS_ADDRESS_INVERTER_PHASE_B_CURRENT = 32074 // int32 readonly
-	MODBUS_ADDRESS_INVERTER_PHASE_C_CURRENT = 32076	// int32 readonly
-	MODBUS_ADDRESS_INVERTER_ACTIVE_POWER = 32080	// int32 readonly
-	MODBUS_ADDRESS_INVERTER_REACTIVE_POWER = 32082	// int32 readonly
-	MODBUS_ADDRESS_INVERTER_POWER_FACTOR = 32084	// int16 readonly
-	MODBUS_ADDRESS_INVERTER_FREQUENCY = 32085 // uint16 readonly
-	MODBUS_ADDRESS_INVERTER_INVERTER_EFFICIENCY = 32086	// uint16 readonly
-	MODBUS_ADDRESS_INVERTER_CABINET_TEMPERATURE = 32087	// int16 readonly
-	MODBUS_ADDRESS_INVERTER_INSULATION_RESISTANCE = 32088 // uint16 readonly
+var (
+	sun2000Registers = map[string]Register{
+		"pv_voltage_string_1": 		Register{Namespace: "sun2000",	Name: "pv_voltage",				Fields: map[string]string{"string": "1"},	Address: 32016, 	Unit: "V", 		Gain: 10, 		Quantity: 1, 	Type: RegisterTypeInt16, 	Writeable: false},
+		"pv_current_string_1": 		Register{Namespace: "sun2000",	Name: "pv_current",				Fields: map[string]string{"string": "1"},	Address: 32017, 	Unit: "A", 		Gain: 100, 		Quantity: 1, 	Type: RegisterTypeInt16, 	Writeable: false},
+		"pv_voltage_string_2": 		Register{Namespace: "sun2000",	Name: "pv_voltage",				Fields: map[string]string{"string": "2"},	Address: 32018, 	Unit: "V", 		Gain: 10, 		Quantity: 1, 	Type: RegisterTypeInt16, 	Writeable: false},
+		"pv_current_string_2": 		Register{Namespace: "sun2000",	Name: "pv_current",				Fields: map[string]string{"string": "2"},	Address: 32019, 	Unit: "A",		Gain: 100,		Quantity: 1, 	Type: RegisterTypeInt16,	Writeable: false},
+		"device_status": 			Register{Namespace: "sun2000",	Name: "device_status",			Fields: map[string]string{},				Address: 32089,		Unit: "",		Gain: 1,		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"input_power": 				Register{Namespace: "sun2000",	Name: "input_power",			Fields: map[string]string{},				Address: 32064,		Unit: "kW",		Gain: 1000,		Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_voltage_phase_a": 	Register{Namespace: "sun2000",	Name: "phase_voltage",			Fields: map[string]string{"phase": "A"},	Address: 32069,		Unit: "V",		Gain: 10, 		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"phase_voltage_phase_b": 	Register{Namespace: "sun2000",	Name: "phase_voltage",			Fields: map[string]string{"phase": "B"},	Address: 32070,		Unit: "V",		Gain: 10, 		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"phase_voltage_phase_c": 	Register{Namespace: "sun2000",	Name: "phase_voltage",			Fields: map[string]string{"phase": "C"},	Address: 32071,		Unit: "V",		Gain: 10, 		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"phase_current_phase_a": 	Register{Namespace: "sun2000",	Name: "phase_current",			Fields: map[string]string{"phase": "A"},	Address: 32072,		Unit: "A",		Gain: 1000, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_current_phase_b": 	Register{Namespace: "sun2000",	Name: "phase_current",			Fields: map[string]string{"phase": "B"},	Address: 32074,		Unit: "A",		Gain: 1000, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_current_phase_c": 	Register{Namespace: "sun2000",	Name: "phase_current",			Fields: map[string]string{"phase": "C"},	Address: 32076,		Unit: "A",		Gain: 1000, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"active_power": 			Register{Namespace: "sun2000",	Name: "active_power",			Fields: map[string]string{},				Address: 32080,		Unit: "kW",		Gain: 1000, 	Quantity: 2,	Type: RegisterTypeInt32, 	Writeable: false},
+		"reactive_power": 			Register{Namespace: "sun2000",	Name: "reactive_power",			Fields: map[string]string{},				Address: 32082,		Unit: "kVar",	Gain: 1000,		Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"power_factor": 			Register{Namespace: "sun2000",	Name: "power_factor",			Fields: map[string]string{},				Address: 32084, 	Unit: "",		Gain: 1000,		Quantity: 1,	Type: RegisterTypeInt16,	Writeable: false},
+		"grid_frequency": 			Register{Namespace: "sun2000",	Name: "grid_frequency",			Fields: map[string]string{},				Address: 32085, 	Unit: "Hz",		Gain: 100,		Quantity: 100,	Type: RegisterTypeUint16,	Writeable: false},
+		"inverter_efficiency": 		Register{Namespace: "sun2000",	Name: "inverter_efficiency",	Fields: map[string]string{},				Address: 32086, 	Unit: "%",		Gain: 100,		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"cabinet_temperature": 		Register{Namespace: "sun2000",	Name: "cabinet_temperature",	Fields: map[string]string{},				Address: 32087, 	Unit: "°C",		Gain: 10,		Quantity: 1,	Type: RegisterTypeInt16,	Writeable: false},
+		"isulation_resistance": 	Register{Namespace: "sun2000",	Name: "isulation_resistance",	Fields: map[string]string{},				Address: 32088, 	Unit: "MΩ",		Gain: 1000,		Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},	
+	}
 
-	// Luna Battery
-	MODBUS_ADDRESS_BATTERY_1_RUNNING_STATUS = 37000 // uint16 readonly - 0: offline, 1: standby, 2: running, 3: fault, 4: sleep
-	MODBUS_ADDRESS_BATTERY_1_CHARGING_STATUS = 37001 // int32  readonly - >0: charging, <0: discharging
-	MODBUS_ADDRESS_BATTERY_1_BUS_VOLTAGE = 37003 // uint16 readonly
-	MODBUS_ADDRESS_BATTERY_1_CAPACITY = 37004 // uint16 readonly
-	MODBUS_ADDRESS_BATTERY_1_TOTAL_CHARGE = 37066 // int32 readonly
-	MODBUS_ADDRESS_BATTERY_1_TOTAL_DISCHARGE = 37068 // int32 readonly
-	MODBUS_ADDRESS_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE = 47100 // uint16 readwrite - 0: stop, 1: charge, 2: discharge
-	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_STOP = 0
-	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_CHARGE = 1
-	MODBUS_STATE_BATTERY_1_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE = 2
-	MODBUS_ADDRESS_BATTERY_1_FORCIBLE_CHARGE_POWER = 47247 // int32 readwrite
-	MODBUS_ADDRESS_BATTERY_1_FORCIBLE_DISCHARGE_POWER = 47249 // int32 readwrite
+	luna2000Registers = map[string]Register{
+		"running_status_battery_1": 			Register{Namespace: "luna2000",	Name: "running_status",				Fields: map[string]string{"battery": "1"},	Address: 37000, Unit: "",		Gain: 1,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"charging_status_battery_1": 			Register{Namespace: "luna2000",	Name: "charging_status",			Fields: map[string]string{"battery": "1"},	Address: 37001,	Unit: "W",		Gain: 1,	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"bus_voltage_battery_1": 				Register{Namespace: "luna2000",	Name: "bus_voltage",				Fields: map[string]string{"battery": "1"},	Address: 37003,	Unit: "V",		Gain: 10,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"battery_capacity_battery_1": 			Register{Namespace: "luna2000",	Name: "battery_capacity",			Fields: map[string]string{"battery": "1"},	Address: 37004,	Unit: "%",		Gain: 10,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"total_charge_battery_1": 				Register{Namespace: "luna2000",	Name: "total_charge",				Fields: map[string]string{"battery": "1"},	Address: 37066,	Unit: "kWh",	Gain: 100,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: false},
+		"total_discharge_battery_1": 			Register{Namespace: "luna2000",	Name: "total_discharge",			Fields: map[string]string{"battery": "1"},	Address: 37068,	Unit: "kWh",	Gain: 100,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: false},
+		"forcible_charge_discharge_battery_1": 	Register{Namespace: "luna2000",	Name: "forcible_charge_discharge",	Fields: map[string]string{"battery": "1"},	Address: 47100,	Unit: "",		Gain: 1,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: true},
+		"forcible_charge_power_battery_1": 		Register{Namespace: "luna2000",	Name: "forcible_charge_power",		Fields: map[string]string{"battery": "1"},	Address: 47247,	Unit: "kW",		Gain: 1000,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
+		"forcible_discharge_power_battery_1": 	Register{Namespace: "luna2000",	Name: "forcible_discharge_power",	Fields: map[string]string{"battery": "1"},	Address: 47249,	Unit: "kW",		Gain: 1000,	Quantity: 2,	Type: RegisterTypeUint32,	Writeable: true},
+	}
 
-	// Power meter
-	MODBUS_ADDRESS_POWER_METER_STATUS = 37100 // uint16 readonly - 0: offline, 1: normal
-	MODBUS_ADDRESS_POWER_METER_PHASE_A_VOLTAGE = 37101 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_B_VOLTAGE = 37103 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_C_VOLTAGE = 37105 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_A_CURRENT = 37107 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_B_CURRENT = 37109 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_C_CURRENT = 37111 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_ACTIVE_POWER = 37113 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_REACTIVE_POWER = 37115 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_POWER_FACTOR = 37117 // int16 readonly
-	MODBUS_ADDRESS_POWER_METER_FREQUENCY = 37118 // uint16 readonly
-	MODBUS_ADDRESS_POWER_METER_POSITIVE_ACTIVE_ELECTRICITY = 37119 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_REVERSE_ACTIVE_POWER = 37121 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_ACCUMULATED_REACTIVE_POWER = 37123 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_AB_LINE_VOLTAGE = 37126 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_BC_LINE_VOLTAGE = 37128 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_CA_LINE_VOLTAGE = 37130 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_A_ACTIVE_POWER = 37132 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_B_ACTIVE_POWER = 37134 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_PHASE_C_ACTIVE_POWER = 37136 // int32 readonly
-	MODBUS_ADDRESS_POWER_METER_MODEL_RESULT = 37138 // uint16 readonly
+	powerMeterRegisters = map[string]Register{
+		"status": 						Register{Namespace: "power_meter",	Name: "status",							Fields: map[string]string{},				Address: 37100,	Unit: "",		Gain: 1,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
+		"phase_voltage_phase_a": 		Register{Namespace: "power_meter",	Name: "phase_voltage",					Fields: map[string]string{"phase": "A"},	Address: 37101,	Unit: "V",		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_voltage_phase_b": 		Register{Namespace: "power_meter",	Name: "phase_voltage",					Fields: map[string]string{"phase": "B"},	Address: 37103,	Unit: "V",		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_voltage_phase_c": 		Register{Namespace: "power_meter",	Name: "phase_voltage",					Fields: map[string]string{"phase": "C"},	Address: 37105,	Unit: "V",		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_current_phase_a": 		Register{Namespace: "power_meter",	Name: "phase_current",					Fields: map[string]string{"phase": "A"},	Address: 37107,	Unit: "A",		Gain: 100, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_current_phase_b": 		Register{Namespace: "power_meter",	Name: "phase_current",					Fields: map[string]string{"phase": "B"},	Address: 37109,	Unit: "A",		Gain: 100, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_current_phase_c": 		Register{Namespace: "power_meter",	Name: "phase_current",					Fields: map[string]string{"phase": "C"},	Address: 37111,	Unit: "A",		Gain: 100, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"active_power": 				Register{Namespace: "power_meter",	Name: "active_power",					Fields: map[string]string{},				Address: 37113, Unit: "W",		Gain: 1, 	Quantity: 2, 	Type: RegisterTypeInt32, 	Writeable: false},
+		"reactive_power": 				Register{Namespace: "power_meter",	Name: "reactive_power",					Fields: map[string]string{},				Address: 37115, Unit: "Var",	Gain: 1, 	Quantity: 2, 	Type: RegisterTypeInt32,	Writeable: false},
+		"power_factor": 				Register{Namespace: "power_meter",	Name: "power_factor",					Fields: map[string]string{},				Address: 37117, Unit: "",		Gain: 1000,	Quantity: 1,	Type: RegisterTypeInt16, 	Writeable: false},
+		"frequency": 					Register{Namespace: "power_meter",	Name: "frequency",						Fields: map[string]string{},				Address: 37118,	Unit: "Hz",		Gain: 100,	Quantity: 1,	Type: RegisterTypeInt16,	Writeable: false},
+		"positive_active_electricity": 	Register{Namespace: "power_meter",	Name: "positive_active_electricity",	Fields: map[string]string{},				Address: 37119,	Unit: "kWh",	Gain: 100, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"reverse_active_power": 		Register{Namespace: "power_meter",	Name: "reverse_active_power",			Fields: map[string]string{},				Address: 37121, Unit: "kWh", 	Gain: 100,	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"accumulated_reactive_power": 	Register{Namespace: "power_meter",	Name: "accumulated_reactive_power",		Fields: map[string]string{},				Address: 37123,	Unit: "kVarh",	Gain: 100,	Quantity: 2,	Type: RegisterTypeInt32, 	Writeable: false},
+		"line_voltage_line_ab": 		Register{Namespace: "power_meter",	Name: "line_voltage",					Fields: map[string]string{"line": "AB"},	Address: 37126,	Unit: "V", 		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"line_voltage_line_bc": 		Register{Namespace: "power_meter",	Name: "line_voltage",					Fields: map[string]string{"line": "BC"},	Address: 37128,	Unit: "V", 		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"line_voltage_line_ca": 		Register{Namespace: "power_meter",	Name: "line_voltage",					Fields: map[string]string{"line": "CA"},	Address: 37130,	Unit: "V", 		Gain: 10, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_active_power_phase_a": 	Register{Namespace: "power_meter",	Name: "phase_active_power",				Fields: map[string]string{"phase": "A"},	Address: 37132,	Unit: "W", 		Gain: 1, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_active_power_phase_b": 	Register{Namespace: "power_meter",	Name: "phase_active_power",				Fields: map[string]string{"phase": "B"},	Address: 37134,	Unit: "W", 		Gain: 1, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+		"phase_active_power_phase_c": 	Register{Namespace: "power_meter",	Name: "phase_active_power",				Fields: map[string]string{"phase": "C"},	Address: 37136,	Unit: "W", 		Gain: 1, 	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
+	}
 )

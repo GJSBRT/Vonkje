@@ -101,12 +101,4 @@ var powerMeterMetrics = []Metric{
 			"phase",
 		},
 	},
-	{
-		Namespace: "power_meter",
-		Name: "model_result",
-		Help: "The power meter model result",
-		Fields: []string{
-			"inverter",
-		},
-	},
 }
