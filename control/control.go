@@ -16,6 +16,7 @@ import (
 type Config struct {
 	Run bool `mapstructure:"run"`
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
+	OverDischargePercentage int `mapstructure:"over-discharge-percentage"`
 }
 
 type Control struct {
@@ -162,7 +163,7 @@ func (c *Control) Start() {
 			}
 
 			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
-			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn)
+			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn) * ((100 + float64(c.config.OverDischargePercentage)) / 100)
 			if avgSolarIn < avgHomeLoad {
 				if wattsRequired > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
