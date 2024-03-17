@@ -17,6 +17,7 @@ type Config struct {
 	Run bool `mapstructure:"run"`
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
 	OverDischargePercentage int `mapstructure:"over-discharge-percentage"`
+	MinimumBatteryCapacity int `mapstructure:"minimum-battery-capacity"`
 }
 
 type Control struct {
@@ -173,7 +174,7 @@ func (c *Control) Start() {
 
 				for _, battery := range batteries {
 					if wattsRequired > 0 {
-						if battery.capacity > 5 {
+						if battery.capacity > float64(c.config.MinimumBatteryCapacity) {
 							var useWatts uint
 							if wattsRequired > 5000 {
 								useWatts = 5000

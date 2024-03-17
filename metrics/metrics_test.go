@@ -36,7 +36,7 @@ func TestSet(t *testing.T) {
 		t.Fatalf("Metric not found")
 	}
 
-	if metric.Values[0].Value != 1.0 {
+	if metric.Values[0].Values[0] != 1.0 {
 		t.Fatalf("Incorrect value")
 	}
 }
