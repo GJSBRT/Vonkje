@@ -95,7 +95,7 @@ func (c *Control) Start() {
 				continue
 			}
 
-			avgHomeLoad := inverterInputPower - (batteryChargingStatus / 1000) - (powerMeterActivePower / 1000)
+			avgHomeLoad := (inverterInputPower * 1000) - batteryChargingStatus - powerMeterActivePower
 			if avgHomeLoad < 0 {
 				avgHomeLoad = 0
 			}
