@@ -149,7 +149,7 @@ func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state
 
 	switch state {
 	case MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE:
-		err = connection.client.WriteUint32(luna2000Registers["maximum_charge_power_battery"].Address, uint32(watts))
+		err = connection.client.WriteUint32(luna2000Registers["forcible_charge_power_battery_1"].Address, uint32(watts))
 		if err != nil {
 			return err
 		}
@@ -159,7 +159,7 @@ func (m *Modbus) ChangeBatteryForceCharge(inverter string, battery string, state
 			return err
 		}
 	case MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP:
-		err = connection.client.WriteUint32(luna2000Registers["maximum_charge_power_battery"].Address, 0)
+		err = connection.client.WriteUint32(luna2000Registers["forcible_charge_power_battery_1"].Address, 0)
 		if err != nil {
 			return err
 		}
