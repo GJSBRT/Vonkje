@@ -172,38 +172,43 @@ func (c *Control) Start() {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
 				}
 
+				if wattsRequired > 0 {
+					c.logger.WithFields(logrus.Fields{"wattsRequired": wattsRequired}).Info("Discharging battery")
+				}
+
+				maxBatteryDischargeWatts := uint(len(batteries)) * 5000
+
+				var wattsFromGrid uint
+				if wattsRequired > maxBatteryDischargeWatts {
+					wattsFromGrid = uint(wattsRequired) - maxBatteryDischargeWatts
+					wattsRequired = float64(maxBatteryDischargeWatts)
+				}
+
+				wattsRequiredPerBattery := wattsRequired / float64(len(batteries))
+
 				for _, battery := range batteries {
-					if wattsRequired > 0 {
-						if battery.capacity > float64(c.config.MinimumBatteryCapacity) {
-							var useWatts uint
-							if wattsRequired > 5000 {
-								useWatts = 5000
-								wattsRequired -= 5000
-							} else {
-								useWatts = uint(wattsRequired)
-								wattsRequired = 0
-							}
-
-							c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": useWatts}).Info("Discharging battery")
-
-							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, useWatts)
-							if err != nil {
-								c.errChannel <- err
-							}	
-						}
-					} else {
-						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")
+					if battery.capacity < float64(c.config.MinimumBatteryCapacity) {
+						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Battery capacity is too low, skipping discharge and setting battery to stop")
 
 						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, 0)
 						if err != nil {
 							c.errChannel <- err
 						}
+
+						continue
 					}
+
+					c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": wattsRequiredPerBattery}).Info("Discharging battery")
+
+					err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, wattsRequiredPerBattery)
+					if err != nil {
+						c.errChannel <- err
+					}	
 				}
 
-				if wattsRequired > 0 {
+				if wattsFromGrid > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 1)
-					c.logger.WithFields(logrus.Fields{"wattsRequired": wattsRequired}).Info("Pulling watts from grid")
+					c.logger.WithFields(logrus.Fields{"wattsFromGrid": wattsFromGrid}).Info("Pulling watts from grid")
 				} else {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 				}
