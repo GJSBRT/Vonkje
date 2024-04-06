@@ -47,6 +47,8 @@ func init() {
 	logger.Info("Read config file successfully")
 
 	switch config.LogLevel {
+	case "trace":
+		logger.SetLevel(logrus.TraceLevel)
 	case "debug":
 		logger.SetLevel(logrus.DebugLevel)
 	case "info":

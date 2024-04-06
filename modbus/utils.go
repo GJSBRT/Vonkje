@@ -1,10 +1,10 @@
-package utils
+package modbus
 
 import (
 	"encoding/binary"
 )
 
-func ConvertTooLargeNumber(in []byte) (uint32) {
+func convertTooLargeNumber(in []byte) (uint32) {
 	var u32 uint32
 	var out []uint32
 

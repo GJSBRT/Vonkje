@@ -189,7 +189,7 @@ func (c *Control) Start() {
 							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, useWatts)
 							if err != nil {
 								c.errChannel <- err
-							}
+							}	
 						}
 					} else {
 						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery}).Info("Battery is not required, stopping discharge")

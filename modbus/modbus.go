@@ -252,7 +252,16 @@ func (m *Modbus) updateMetricsRegisters(connection *Connection, inverter Inverte
 				return err
 			}
 
-			result = int(reg)
+			if reg > 9999999 {
+				regBytes, err := connection.client.ReadBytes(register.Address, register.Quantity * 2, modbus.HOLDING_REGISTER)
+				if err != nil {
+					return err
+				}
+				
+				result = int(convertTooLargeNumber(regBytes))
+			} else {
+				result = int(reg)
+			}
 		case RegisterTypeInt16:
 			var res int16
 			reg, err := connection.client.ReadRegister(register.Address, modbus.HOLDING_REGISTER)
