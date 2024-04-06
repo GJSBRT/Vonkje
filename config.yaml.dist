@@ -1,8 +1,9 @@
-log-level: info
+log-level: info # Logging level. Info is fine use debug or trace when something is not behaving like it should.
 
+# A HTTP server is needed for metrics and debugging
 http:
-  ip: 127.0.0.1
-  port: 8080
+  ip: 127.0.0.1 # What IP address it should listen on. Use 0.0.0.0 to listen on everything
+  port: 8080 # What port it should listen on.
 
 modbus:
   run: true # Read metrics from inverters every interval
@@ -27,6 +28,7 @@ modbus:
           power-meter: true
           luna2000: true
 
+# Power price configuration
 power-prices:
   sources:
     entsoe:
@@ -35,6 +37,7 @@ power-prices:
       # You will need to contact Entsoe support to get access to their API.
       security-token: ""
 
+# Victoria metrics is used to pull and push metrics without using the /metrics endpoint
 victoria-metrics:
   url: http://127.0.0.1:8428
   # Basic HTTP authentication
