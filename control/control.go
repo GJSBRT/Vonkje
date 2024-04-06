@@ -164,7 +164,7 @@ func (c *Control) Start() {
 			}
 
 			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
-			wattsRequired := math.Ceil(avgHomeLoad - avgSolarIn) * ((100 + float64(c.config.OverDischargePercentage)) / 100)
+			wattsRequired := uint(math.Ceil(avgHomeLoad - avgSolarIn) * ((100 + float64(c.config.OverDischargePercentage)) / 100))
 			if avgSolarIn < avgHomeLoad {
 				if wattsRequired > 0 {
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
@@ -181,10 +181,10 @@ func (c *Control) Start() {
 				var wattsFromGrid uint
 				if wattsRequired > maxBatteryDischargeWatts {
 					wattsFromGrid = uint(wattsRequired) - maxBatteryDischargeWatts
-					wattsRequired = float64(maxBatteryDischargeWatts)
+					wattsRequired = maxBatteryDischargeWatts
 				}
 
-				wattsRequiredPerBattery := wattsRequired / float64(len(batteries))
+				wattsRequiredPerBattery := wattsRequired / uint(len(batteries))
 
 				for _, battery := range batteries {
 					if battery.capacity < float64(c.config.MinimumBatteryCapacity) {
