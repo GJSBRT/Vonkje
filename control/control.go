@@ -18,6 +18,7 @@ type Config struct {
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
 	OverDischargePercentage int `mapstructure:"over-discharge-percentage"`
 	MinimumBatteryCapacity int `mapstructure:"minimum-battery-capacity"`
+	BatteryChargePercentage int `mapstructure:"battery-charge-percentage"`
 }
 
 type Control struct {
@@ -138,7 +139,7 @@ func (c *Control) Start() {
 				metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
 
 				// charge batteries with 20% less than over production
-				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * 0.90)) / uint(len(batteries))
+				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * (float64(c.config.BatteryChargePercentage) / 100)))
 
 				for _, battery := range batteries {
 					if battery.capacity < 100 {

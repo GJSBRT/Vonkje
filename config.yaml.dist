@@ -49,3 +49,5 @@ control:
   minimum-solar-over-production: 10 # Minimum percentage solar over production. This is the percentage of unused power.
   over-discharge-percentage: 3 # What percentage to over discharge. Handy for spikes in energy usage.
   minimum-battery-capacity: 5 # Minimum capacity to leave in the batteries.
+  battery-charge-percentage: 90 # Percentage to charge batteries. If your over production is 1000w then 900w will be used to charge the batteries.
+
