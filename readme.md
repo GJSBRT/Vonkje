@@ -8,3 +8,13 @@ Vonkje is a small service which manages communication, metrics, decision making 
 ## Development Dependencies
 - **Golang** 1.22 or higher
 - **Docker** for Victoria Metrics and Grafana
+
+## Images
+Overview:
+![Grafana](./docs/images/overview.png)
+Solar:
+![Solar](./docs/images/solar.png)
+Battery:
+![Battery](./docs/images/battery.png)
+Power Meter:
+![Power Meter](./docs/images/power-meter.png)
