@@ -8,15 +8,21 @@ import (
 	"encoding/json"
 )
 
+type AllInPowerConfig struct {
+	Enable bool `mapstructure:"enable"`
+}
+
 type AllInPower struct {
 	name string
 	Client *http.Client
+	Config AllInPowerConfig
 }
 
-func newAllInPower() *AllInPower {
+func newAllInPower(config AllInPowerConfig) *AllInPower {
 	return &AllInPower{
 		name: "all-in-power",
 		Client: &http.Client{},
+		Config: config,
 	}
 }
 

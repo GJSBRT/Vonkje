@@ -12,6 +12,7 @@ import (
 const entsoeTimestampFormat = "200601021504"
 
 type EntsoeConfig struct {
+	Enable bool `mapstructure:"enable"`
 	SecurityToken string `mapstructure:"security-token"`
 	Domain string `mapstructure:"domain"`
 }

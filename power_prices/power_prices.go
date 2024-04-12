@@ -11,10 +11,12 @@ import (
 )
 
 type PowerPriceSourceConfigs struct {
+	AllInPower AllInPowerConfig `mapstructure:"all-in-power"`
 	Entsoe EntsoeConfig `mapstructure:"entsoe"`
 }
 
 type Config struct {
+	Enabled bool `mapstructure:"enabled"`
 	Sources PowerPriceSourceConfigs `mapstructure:"sources"`
 }
 
@@ -45,8 +47,13 @@ func New(
 	logger *logrus.Logger,
 	victoriaMetrics *victoria_metrics.VictoriaMetrics,
 ) *PowerPrices {
-	sources = append(sources, newAllInPower())
-	sources = append(sources, newEntsoe(config.Sources.Entsoe))
+	if !config.Sources.AllInPower.Enable {
+		sources = append(sources, newAllInPower(config.Sources.AllInPower))
+	}
+
+	if !config.Sources.Entsoe.Enable {
+		sources = append(sources, newEntsoe(config.Sources.Entsoe))
+	}
 
 	return &PowerPrices{
 		Config: config,
@@ -97,6 +104,11 @@ func (pp *PowerPrices) updateMetrics() error {
 }
 
 func (pp *PowerPrices) Start() {
+	if !pp.Config.Enabled {
+		pp.logger.Warn("Power price collector is disabled")
+		return
+	}
+
 	pp.logger.Info("Starting power price collector")
 
 	err := pp.updateMetrics()
