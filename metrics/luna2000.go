@@ -55,4 +55,12 @@ var luna2000Metrics = []Metric{
 			"battery",
 		},
 	},
+	{
+		Namespace: "luna2000",
+		Name: "charge_discharge_power",
+		Help: "The charge discharge power",
+		Fields: []string{
+			"inverter",
+		},
+	},
 }
