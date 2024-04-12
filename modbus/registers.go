@@ -51,6 +51,7 @@ var (
 	}
 
 	luna2000Registers = map[string]Register{
+		"charge_discharge_power":				Register{Namespace: "luna2000",	Name: "charge_discharge_power",		Fields: map[string]string{},				Address: 37765,	Unit: "W",		Gain: 1,	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
 		"running_status_battery_1": 			Register{Namespace: "luna2000",	Name: "running_status",				Fields: map[string]string{"battery": "1"},	Address: 37000, Unit: "",		Gain: 1,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},
 		"charging_status_battery_1": 			Register{Namespace: "luna2000",	Name: "charging_status",			Fields: map[string]string{"battery": "1"},	Address: 37001,	Unit: "W",		Gain: 1,	Quantity: 2,	Type: RegisterTypeInt32,	Writeable: false},
 		"bus_voltage_battery_1": 				Register{Namespace: "luna2000",	Name: "bus_voltage",				Fields: map[string]string{"battery": "1"},	Address: 37003,	Unit: "V",		Gain: 10,	Quantity: 1,	Type: RegisterTypeUint16,	Writeable: false},

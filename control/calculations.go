@@ -14,18 +14,17 @@ func calculateHomeLoad() (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	inverterInputPower = inverterInputPower * 1000
 
 	powerMeterActivePower, err := metrics.GetMetricLastEntrySum("power_meter", "active_power")
 	if err != nil {
 		return 0, err
 	}
 
-	// Calculate home load when sun is out.
-	homeLoad = (inverterInputPower * 1000) - powerMeterActivePower
-	
-	// If sun is not out, calculate home load based on power meter.
-	if homeLoad < 0 {
-		homeLoad = powerMeterActivePower - (inverterInputPower * 1000)
+	if inverterInputPower > powerMeterActivePower {
+		homeLoad = inverterInputPower - powerMeterActivePower
+	} else {
+		homeLoad = powerMeterActivePower - inverterInputPower
 	}
 
 	return homeLoad, nil
