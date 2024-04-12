@@ -30,8 +30,15 @@ modbus:
 
 # Power price configuration
 power-prices:
+  # Enable or disable collecting completely
+  enable: false
   sources:
+    all-in-power:
+      # Enable or disable All In Power power price collecting
+      enable: false
     entsoe:
+      # Enable or disable entsoe power price collecting
+      enable: false
       # Domains can be found here: https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_areas
       domain: "10YNL----------L"
       # You will need to contact Entsoe support to get access to their API.
