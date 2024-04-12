@@ -80,20 +80,15 @@ func (c *Control) Start() {
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
 			// 1. Get current home energy consumption
-			inverterInputPower, err := metrics.GetMetricLastEntrySum("sun2000", "active_power")
+			avgHomeLoad, err := calculateHomeLoad()
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
+			avgHomeLoad = math.Ceil(avgHomeLoad)
 
-			powerMeterActivePower, err := metrics.GetMetricLastEntrySum("power_meter", "active_power")
-			if err != nil {
-				c.errChannel <- err
-				continue
-			}
-
-			avgHomeLoad := (inverterInputPower * 1000) - powerMeterActivePower
 			if avgHomeLoad < 0 {
+				c.logger.WithFields(logrus.Fields{"avgHomeLoad": avgHomeLoad}).Info("Home load is negative, setting to 0")
 				avgHomeLoad = 0
 			}
 
