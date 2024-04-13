@@ -191,7 +191,7 @@ func (c *Control) Start() {
 				// Overusage has been compensated. No further actions is required.
 				continue
 			} else {
-				availableWatts := int(float64(overProduction) * (float64(c.config.BatteryChargePercentage) / 100))
+				availableWatts := int(float64(overProduction + batteryChargeWatts) * (float64(c.config.BatteryChargePercentage) / 100))
 				c.logger.WithFields(logrus.Fields{"overProduction":overProduction, "availableWatts": availableWatts}).Info("Overproduction and available watts for charging batteries")
 
 				if availableWatts > 0 {
