@@ -143,8 +143,12 @@ func (c *Control) Start() {
 				}
 			}
 
+			c.logger.WithFields(logrus.Fields{"batteriesWithCapacity": batteriesWithCapacity, "batteriesFull": batteriesFull}).Info("Battery capacities")
+
 			// Are we pulling power from the grid?
 			if overUsage > 0 {
+				c.logger.WithFields(logrus.Fields{"overUsage": overUsage}).Info("Overusage detected")
+
 				// If batteries are charging with more than the overusage we should dial back the charging power
 				if batteryChargeWatts > overUsage {
 					newChargeWatts := (batteryChargeWatts - overUsage) * (c.config.BatteryChargePercentage / 100) // Add buffer to prevent charging to much
@@ -187,7 +191,9 @@ func (c *Control) Start() {
 				// Overusage has been compensated. No further actions is required.
 				continue
 			} else {
-				availableWatts := (overProduction + batteryChargeWatts) * (c.config.BatteryChargePercentage / 100)
+				availableWatts := overProduction * (c.config.BatteryChargePercentage / 100)
+				c.logger.WithFields(logrus.Fields{"overProduction":overProduction, "availableWatts": availableWatts}).Info("Overproduction and available watts for charging batteries")
+
 				if availableWatts > 0 {
 					if (len(batteries) - batteriesFull) == 0 {
 						c.logger.WithFields(logrus.Fields{"availableWatts": availableWatts}).Info("No batteries available to charge")
@@ -206,6 +212,7 @@ func (c *Control) Start() {
 
 					c.logger.WithFields(logrus.Fields{"availableWatts": availableWatts}).Info("Charging batteries")
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
+					continue
 				}
 			}
 		}
