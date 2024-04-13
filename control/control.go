@@ -151,7 +151,7 @@ func (c *Control) Start() {
 
 				// If batteries are charging with more than the overusage we should dial back the charging power
 				if batteryChargeWatts > overUsage {
-					newChargeWatts := (batteryChargeWatts - overUsage) * (c.config.BatteryChargePercentage / 100) // Add buffer to prevent charging to much
+					newChargeWatts := int(float64(batteryChargeWatts - overUsage) * float64(c.config.BatteryChargePercentage / 100)) // Add buffer to prevent charging to much
 					newChargeWattsPerBattery := newChargeWatts / len(batteries)
 
 					for _, battery := range batteries {
@@ -175,7 +175,7 @@ func (c *Control) Start() {
 					continue
 				}
 
-				newDischargeWatts := (batteryDischargeWatts - overUsage) * (c.config.BatteryDischargePercentage / 100)
+				newDischargeWatts := int(float64(batteryDischargeWatts - overUsage) * float64(c.config.BatteryDischargePercentage / 100))
 				newDischargeWattsPerBattery := newDischargeWatts / batteriesWithCapacity
 
 				for _, battery := range batteries {
@@ -191,7 +191,7 @@ func (c *Control) Start() {
 				// Overusage has been compensated. No further actions is required.
 				continue
 			} else {
-				availableWatts := overProduction * (c.config.BatteryChargePercentage / 100)
+				availableWatts := int(float64(overProduction) * float64(c.config.BatteryChargePercentage / 100))
 				c.logger.WithFields(logrus.Fields{"overProduction":overProduction, "availableWatts": availableWatts}).Info("Overproduction and available watts for charging batteries")
 
 				if availableWatts > 0 {
