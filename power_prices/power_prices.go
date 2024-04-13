@@ -16,7 +16,7 @@ type PowerPriceSourceConfigs struct {
 }
 
 type Config struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enable bool `mapstructure:"enable"`
 	Sources PowerPriceSourceConfigs `mapstructure:"sources"`
 }
 
@@ -104,7 +104,7 @@ func (pp *PowerPrices) updateMetrics() error {
 }
 
 func (pp *PowerPrices) Start() {
-	if !pp.Config.Enabled {
+	if !pp.Config.Enable {
 		pp.logger.Warn("Power price collector is disabled")
 		return
 	}

@@ -203,6 +203,9 @@ func (c *Control) Start() {
 							}
 						}
 					}
+
+					c.logger.WithFields(logrus.Fields{"availableWatts": availableWatts}).Info("Charging batteries")
+					metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
 				}
 			}
 		}
