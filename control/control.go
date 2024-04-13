@@ -146,18 +146,18 @@ func (c *Control) Start() {
 			// Are we pulling power from the grid?
 			if overUsage > 0 {
 				// If batteries are charging with more than the overusage we should dial back the charging power
-				if chargeWatts > overUsage {
-					newChargeWatts := (chargeWatts - overUsage) * (c.config.BatteryChargePercentage / 100) // Add buffer to prevent charging to much
+				if batteryChargeWatts > overUsage {
+					newChargeWatts := (batteryChargeWatts - overUsage) * (c.config.BatteryChargePercentage / 100) // Add buffer to prevent charging to much
 					newChargeWattsPerBattery := newChargeWatts / len(batteries)
 
 					for _, battery := range batteries {
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, newChargeWattsPerBattery)
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, uint(newChargeWattsPerBattery))
 						if err != nil {
 							c.errChannel <- err
 						}
 					}
 
-					c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "chargeWatts": chargeWatts, "newChargeWatts": newChargeWatts}).Info("Dialing back battery charge")
+					c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "batteryChargeWatts": batteryChargeWatts, "newChargeWatts": newChargeWatts}).Info("Dialing back battery charge")
 					metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
 					
 					// Overusage has been compensated. No further actions is required.
@@ -171,17 +171,17 @@ func (c *Control) Start() {
 					continue
 				}
 
-				newDischargeWatts := (dischargeWatts - overUsage) * (c.config.BatteryDischargePercentage / 100)
+				newDischargeWatts := (batteryDischargeWatts - overUsage) * (c.config.BatteryDischargePercentage / 100)
 				newDischargeWattsPerBattery := newDischargeWatts / batteriesWithCapacity
 
 				for _, battery := range batteries {
-					err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, newDischargeWattsPerBattery)
+					err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, uint(newDischargeWattsPerBattery))
 					if err != nil {
 						c.errChannel <- err
 					}
 				}
 
-				c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "dischargeWatts": dischargeWatts, "newDischargeWatts": newDischargeWatts}).Info("Discharging batteries to compensate for overusage")
+				c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "batteryDischargeWatts": batteryDischargeWatts, "newDischargeWatts": newDischargeWatts}).Info("Discharging batteries to compensate for overusage")
 				metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
 
 				// Overusage has been compensated. No further actions is required.
@@ -197,7 +197,7 @@ func (c *Control) Start() {
 					perBatteryChargeWatts := availableWatts / (len(batteries) - batteriesFull)
 					for _, battery := range batteries {
 						if battery.capacity < 100 {
-							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, perBatteryChargeWatts)
+							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, uint(perBatteryChargeWatts))
 							if err != nil {
 								c.errChannel <- err
 							}
