@@ -16,9 +16,9 @@ import (
 type Config struct {
 	Run bool `mapstructure:"run"`
 	MinimumSolarOverProduction int `mapstructure:"minimum-solar-over-production"`
-	OverDischargePercentage int `mapstructure:"over-discharge-percentage"`
 	MinimumBatteryCapacity int `mapstructure:"minimum-battery-capacity"`
 	BatteryChargePercentage int `mapstructure:"battery-charge-percentage"`
+	BatteryDischargePercentage int `mapstructure:"battery-discharge-percentage"`
 }
 
 type Control struct {
@@ -79,27 +79,43 @@ func (c *Control) Start() {
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
 			metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
 
-			// 1. Get current home energy consumption
-			avgHomeLoad, err := calculateHomeLoad()
+			// 1. Get power meter active power
+			powerMeterActivePower, err := metrics.GetMetricLastEntrySum("power_meter", "active_power")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
-			avgHomeLoad = math.Ceil(avgHomeLoad)
-
-			if avgHomeLoad < 0 {
-				c.logger.WithFields(logrus.Fields{"avgHomeLoad": avgHomeLoad}).Info("Home load is negative, setting to 0")
-				avgHomeLoad = 0
+			var overUsage int
+			var overProduction int
+			if powerMeterActivePower < 0 {
+				overUsage = int(math.Abs(powerMeterActivePower))
+			} else {
+				overProduction = int(powerMeterActivePower)
 			}
 
-			// 2. Get current solar production
-			avgSolarIn, err := metrics.GetMetricLastEntryAverage("sun2000", "input_power")
+			// 2. Get current solar production sum
+			avgSolarIn, err := metrics.GetMetricLastEntrySum("sun2000", "input_power")
 			if err != nil {
 				c.errChannel <- err
 				continue
 			}
-			avgSolarIn = math.Floor(avgSolarIn * 1000)
-			c.logger.WithFields(logrus.Fields{"avgSolarIn": avgSolarIn, "avgHomeLoad": avgHomeLoad}).Info("Solar production and home load")
+			avgSolarIn = math.Floor(avgSolarIn * 1000) // convert to watts
+
+			c.logger.WithFields(logrus.Fields{"avgSolarIn": avgSolarIn, "powerMeterActivePower": powerMeterActivePower}).Info("Solar production and home load")
+
+			// Get battery (dis)charge watts
+			batteryWatts, err := metrics.GetMetricLastEntrySum("luna2000", "charging_status")
+			if err != nil {
+				c.errChannel <- err
+				continue
+			}
+			var batteryChargeWatts int
+			var batteryDischargeWatts int
+			if batteryWatts > 0 {
+				batteryChargeWatts = int(batteryWatts)
+			} else {
+				batteryDischargeWatts = int(math.Abs(batteryWatts))
+			}
 
 			// 3. Get current battery capacities
 			batteryMetricValues, err := metrics.GetMetricValues("luna2000", "battery_capacity")
@@ -115,98 +131,78 @@ func (c *Control) Start() {
 					capacity: batteryMetricValue.Values[len(batteryMetricValue.Values) - 1],
 				})
 			}
+			var batteriesWithCapacity int
+			var batteriesFull int
+			for _, battery := range batteries {
+				if battery.capacity > float64(c.config.MinimumBatteryCapacity) {
+					batteriesWithCapacity++
+				}
 
-			// Get over production in percentage
-			var overProduction float64
-			var overProductionWatts int
-			if avgSolarIn > avgHomeLoad {
-				overProduction = math.Ceil((avgSolarIn - avgHomeLoad) / avgSolarIn * 100)
-				overProductionWatts = int(math.Floor(avgSolarIn - avgHomeLoad))
-			} else {
-				overProduction = 0
-				overProductionWatts = 0
+				if battery.capacity == 100 {
+					batteriesFull++
+				}
 			}
-			metrics.SetMetricValue("control", "over_production", map[string]string{}, overProduction)
-			c.logger.WithFields(logrus.Fields{"percentage": overProduction, "watts": overProductionWatts}).Info("Over production")
 
-			// 4. if solar over production is more than x%, charge battery
-			if overProduction > float64(c.config.MinimumSolarOverProduction) {
-				metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
+			// Are we pulling power from the grid?
+			if overUsage > 0 {
+				// If batteries are charging with more than the overusage we should dial back the charging power
+				if chargeWatts > overUsage {
+					newChargeWatts := (chargeWatts - overUsage) * (c.config.BatteryChargePercentage / 100) // Add buffer to prevent charging to much
+					newChargeWattsPerBattery := newChargeWatts / len(batteries)
 
-				// charge batteries with 20% less than over production
-				batteryChargeWatts := uint(math.Floor(float64(overProductionWatts) * (float64(c.config.BatteryChargePercentage) / 100)))
+					for _, battery := range batteries {
+						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, newChargeWattsPerBattery)
+						if err != nil {
+							c.errChannel <- err
+						}
+					}
+
+					c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "chargeWatts": chargeWatts, "newChargeWatts": newChargeWatts}).Info("Dialing back battery charge")
+					metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 1)
+					
+					// Overusage has been compensated. No further actions is required.
+					continue
+				}
+
+				// If no batteries have capacity, pull from grid :(
+				if batteriesWithCapacity == 0 {
+					metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 1)
+					c.logger.WithFields(logrus.Fields{"overUsage": overUsage}).Info("Pulling watts from grid")
+					continue
+				}
+
+				newDischargeWatts := (dischargeWatts - overUsage) * (c.config.BatteryDischargePercentage / 100)
+				newDischargeWattsPerBattery := newDischargeWatts / batteriesWithCapacity
 
 				for _, battery := range batteries {
-					if battery.capacity < 100 {
-						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": batteryChargeWatts}).Info("Battery is not fully charged, starting charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, batteryChargeWatts)
-						if err != nil {
-							c.errChannel <- err
-							continue
-						}
-					} else {
-						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "watts": batteryChargeWatts}).Info("Battery is fully charged, stopping charge")
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, 0)
-						if err != nil {
-							c.errChannel <- err
-							continue
-						}
+					err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, newDischargeWattsPerBattery)
+					if err != nil {
+						c.errChannel <- err
 					}
 				}
 
+				c.logger.WithFields(logrus.Fields{"overUsage": overUsage, "dischargeWatts": dischargeWatts, "newDischargeWatts": newDischargeWatts}).Info("Discharging batteries to compensate for overusage")
+				metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
+
+				// Overusage has been compensated. No further actions is required.
 				continue
 			} else {
-				metrics.SetMetricValue("control", "action", map[string]string{"action": "charge_batteries"}, 0)
-			}
-
-			// 5. if solar production < home energy consumption && battery capacity > 5%, discharge battery
-			wattsRequired := uint(math.Ceil(avgHomeLoad - avgSolarIn) * ((100 + float64(c.config.OverDischargePercentage)) / 100))
-			if avgSolarIn < avgHomeLoad {
-				if wattsRequired > 0 {
-					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 1)
-				} else {
-					metrics.SetMetricValue("control", "action", map[string]string{"action": "discharge_battery"}, 0)
-				}
-
-				if wattsRequired > 0 {
-					c.logger.WithFields(logrus.Fields{"wattsRequired": wattsRequired}).Info("Discharging battery")
-				}
-
-				maxBatteryDischargeWatts := uint(len(batteries)) * 5000
-
-				var wattsFromGrid uint
-				if wattsRequired > maxBatteryDischargeWatts {
-					wattsFromGrid = uint(wattsRequired) - maxBatteryDischargeWatts
-					wattsRequired = maxBatteryDischargeWatts
-				}
-
-				wattsRequiredPerBattery := wattsRequired / uint(len(batteries))
-
-				for _, battery := range batteries {
-					if battery.capacity < float64(c.config.MinimumBatteryCapacity) {
-						c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity}).Info("Battery capacity is too low, skipping discharge and setting battery to stop")
-
-						err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_STOP, 0)
-						if err != nil {
-							c.errChannel <- err
-						}
-
+				availableWatts := (overProduction + batteryChargeWatts) * (c.config.BatteryChargePercentage / 100)
+				if availableWatts > 0 {
+					if (len(batteries) - batteriesFull) == 0 {
+						c.logger.WithFields(logrus.Fields{"availableWatts": availableWatts}).Info("No batteries available to charge")
 						continue
 					}
 
-					c.logger.WithFields(logrus.Fields{"inverter": battery.inverter, "battery": battery.battery, "capacity": battery.capacity, "watts": wattsRequiredPerBattery}).Info("Discharging battery")
-
-					err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_DISCHARGE, wattsRequiredPerBattery)
-					if err != nil {
-						c.errChannel <- err
-					}	
-				}
-
-				if wattsFromGrid > 0 {
-					metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 1)
-					c.logger.WithFields(logrus.Fields{"wattsFromGrid": wattsFromGrid}).Info("Pulling watts from grid")
-				} else {
-					metrics.SetMetricValue("control", "action", map[string]string{"action": "pull_from_grid"}, 0)
+					perBatteryChargeWatts := availableWatts / (len(batteries) - batteriesFull)
+					for _, battery := range batteries {
+						if battery.capacity < 100 {
+							err := c.modbus.ChangeBatteryForceCharge(battery.inverter, battery.battery, modbus.MODBUS_STATE_BATTERY_FORCIBLE_CHARGE_DISCHARGE_CHARGE, perBatteryChargeWatts)
+							if err != nil {
+								c.errChannel <- err
+							}
+						}
+					}
 				}
 			}
 		}

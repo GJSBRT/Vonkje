@@ -57,7 +57,7 @@ control:
   # I'm not sure how well the batteries like being set to discharge and stop every 5s so I think you do not want to change this below 30s.
   loop-interval: 30
   minimum-solar-over-production: 10 # Minimum percentage solar over production. This is the percentage of unused power.
-  over-discharge-percentage: 3 # What percentage to over discharge. Handy for spikes in energy usage.
   minimum-battery-capacity: 5 # Minimum capacity to leave in the batteries.
   battery-charge-percentage: 90 # Percentage to charge batteries. If your over production is 1000w then 900w will be used to charge the batteries.
+  battery-discharge-percentage: 110 # Percentage to discharge batteries. If you need 1000w and you have set 110% then we will discharge with 1100w.
 
